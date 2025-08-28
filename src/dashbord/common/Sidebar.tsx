@@ -15,7 +15,8 @@ import {
   ChevronRight, 
   Menu,
   X,
-  Search
+  Search,
+  Milk
 } from "lucide-react"
 import { Link, useLocation } from "react-router-dom"
 import { useSelector } from "react-redux"
@@ -28,9 +29,14 @@ interface SidebarProps {
 
 const sidebarItems = [
   {
-    title: "Dashboard",
+    title: "Admin Dashboard",
     icon: Home,
     href: "/admin/dashboard",
+  },
+  {
+    title: "User Dashboard",
+    icon: BarChart3,
+    href: "/admin/user-dashboard",
   },
   {
     title: "Users Details",
@@ -48,6 +54,11 @@ const sidebarItems = [
     href: "/admin/milk",
   },
   {
+    title: "Milk Management",
+    icon: Milk,
+    href: "/admin/milk-management",
+  },
+  {
     title: "Add Month",
     icon: BarChart3,
     href: "/admin/add-month",
@@ -58,20 +69,20 @@ const sidebarItems = [
     href: "/admin/settings",
   },
   {
-    title: "User Monthly Reports",
+    title: "User Daily Reports",
     icon: Mail,
     href: "/admin/user-reports",
   },
-  {
-    title: "Admin Monthly Reports",
-    icon: Calendar,
-    href: "/admin/admin-reports",
-  },
-   {
-    title: "User Daily Reports",
-    icon: Calendar,
-    href: "/admin/user-daily",
-  },
+  // {
+  //   title: "Admin Monthly Reports",
+  //   icon: Calendar,
+  //   href: "/admin/admin-reports",
+  // },
+  //  {
+  //   title: "User Daily Reports",
+  //   icon: Calendar,
+  //   href: "/admin/user-daily",
+  // },
 ]
 export function Sidebar({ className, onCollapsedChange }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)

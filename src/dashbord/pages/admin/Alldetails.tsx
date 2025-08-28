@@ -3,7 +3,7 @@ import { useSelector, useDispatch } from 'react-redux'
 import { RootState, AppDispatch } from '../../../store/store'
 import AdminHeader from '@/dashbord/common/AdminHeader'
 import Loading from '@/dashbord/ui/Loading'
-import { fetchAllMilkEntries } from '../../../store/slices/milkSlicer'
+import { getAllMilk } from '../../../store/slices/milkSlicer'
 import { Badge } from "@/components/ui/badge"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 
@@ -23,7 +23,7 @@ const Alldetails = () => {
     const { milkEntries, loading, error } = useSelector((state: RootState) => state.milk)
 
     useEffect(() => {
-        dispatch(fetchAllMilkEntries())
+        dispatch(getAllMilk())
     }, [dispatch])
 
     const formatDate = (dateString: string) => {

@@ -10,17 +10,19 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Eye, EyeOff, Lock, Mail, Milk, Loader2 } from "lucide-react"
 import axiosInstance from "@/utils/axiosInstance"
 import { apiToast } from "@/utils/toast"
-  import { useNavigate } from "react-router-dom"
+import { useNavigate } from "react-router-dom"
+import { useAuth } from "@/hooks/useAuth"
+
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("")
-   const navigator= useNavigate()
+  const navigator = useNavigate()
+  const { login } = useAuth()
 
   const handleSubmit = async (e: React.FormEvent) => {
-   
     e.preventDefault()
     setIsLoading(true)
     setError("")
@@ -37,21 +39,25 @@ export default function LoginPage() {
       return
     }
 
-    // Submit using axios
     try {
       const response = await axiosInstance.post("/users/login", {
         email,
         password,
       })
-      console.log(response)
 
-      const data = response.status === 200
-      if (data) {
-        localStorage.setItem("flag", "true")
-
+      if (response.status === 200) {
+        // Call login to get user data and set auth state
+        const userData = await login()
+        
         apiToast.login.success()
+        
+        // Navigate based on role
         setTimeout(() => {
-          navigator("/dashboard")
+          if (userData.role === 'admin') {
+            navigator("/admin/dashboard")
+          } else {
+            navigator("/dashboard")
+          }
         }, 1000)
       } else { 
         throw new Error("Login failed")
@@ -59,7 +65,6 @@ export default function LoginPage() {
     } catch (error: any) {
       const message = error?.response?.data?.message || error?.message || "Login failed"
       setError(message)
-      // apiToast.login.error(message)
     } finally {
       setIsLoading(false)
     }

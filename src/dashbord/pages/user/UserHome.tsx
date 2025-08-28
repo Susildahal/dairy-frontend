@@ -6,7 +6,7 @@ export default function UserHome() {
   const hadnlecheck =()=>{
     const flag = localStorage.getItem("flag")
     if(flag==="true"){
-      navigate("/dashboard")
+      navigate("/admin/dashboard")
     }else{
       navigate("/login")
     } 

@@ -1,5 +1,4 @@
 
-
 import { Settings, User, Menu, Home, Users, BarChart3, FileText, Mail, Calendar } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -19,7 +18,9 @@ import { useSelector, useDispatch } from "react-redux"
 import { getmee } from "../../store/slices/meeSlicer"
 import { useEffect } from "react"
 import { RootState, AppDispatch } from "../../store/store"
+import { useAuth } from "@/hooks/useAuth"
 import axiosInstance from "@/utils/axiosInstance"
+import { useNavigate } from "react-router-dom"
 const sidebarItems = [
   {
     title: "Dashboard",
@@ -63,27 +64,30 @@ const sidebarItems = [
   },
 ]
 
-const handleLogout =()=>{
- 
-  axiosInstance.post("/users/user/logout").then((response) => { 
-     localStorage.removeItem("flag")
-    console.log(response)
-    window.location.href = "/login"
-  }).catch((error) => {
-    console.error("Logout failed:", error)
-    window.location.href = "/login"
-  })
-}
-
-
 export function Header() {
+  const navigate = useNavigate()
   const dispatch = useDispatch<AppDispatch>()
   const { data, error } = useSelector((state: RootState) => state.mee)
+  const { logout } = useAuth()
 
   useEffect(() => {
     if(!data)
       dispatch(getmee())
   }, [dispatch])
+
+  const handleLogout = () => {
+ axiosInstance.post('users/user/logout')
+      .then(() => {
+        logout()
+       navigate('/login')
+       localStorage.removeItem('flag')
+      })
+      .catch((error) => {
+        console.error('Logout failed:', error)
+        // Still proceed to logout on client side
+        logout()
+      })
+  }
 
   
   const location = useLocation()
@@ -129,7 +133,7 @@ export function Header() {
                 {/* Footer */}
                 <div className="p-4 border-t border-gray-200 dark:border-gray-700">
                   <div className="flex items-center space-x-3">
-                    <div className="h-1 w-1 rounded-full bg-green-500 flex items-center justify-center">
+                    <div className="h-8 w-8 rounded-full bg-green-500 flex items-center justify-center">
                       <span className="text-sm font-medium text-white">
                         {data?.name ? data.name.charAt(0).toUpperCase() : "A"}
                       </span>
@@ -141,7 +145,6 @@ export function Header() {
                       <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                         {data?.email || "admin@dairy.com"}
                       </p>
-                    
                     </div>
                   </div>
                 </div>
@@ -160,20 +163,20 @@ export function Header() {
         {/* Right side - User menu and actions */}
         <div className="flex items-center gap-1 sm:gap-2 md:gap-3">
           {/* Notifications - visible on larger screens */}
-          <div className="hidden md:flex items-center gap-2">
+          {/* <div className="hidden md:flex items-center gap-2">
             <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-9 sm:w-9">
               <Mail className="h-4 w-4 sm:h-5 sm:w-5" />
             </Button>
             <Button variant="ghost" size="icon" className="h-8 w-8 sm:h-9 sm:w-9">
               <Settings className="h-4 w-4 sm:h-5 sm:w-5" />
             </Button>
-          </div>
+          </div> */}
 
           {/* User Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-2 w-3 sm:h-9 sm:w-9 md:h-4 md:w-4 rounded-full p-0">
-                <Avatar className="h-2 w-2 sm:h-4 sm:w-4 md:h-10 md:w-10">
+              <Button variant="ghost" className="relative h-8 w-8 sm:h-9 sm:w-9 md:h-10 md:w-10 rounded-full p-0">
+                <Avatar className="h-8 w-8 sm:h-9 sm:w-9 md:h-6 md:w-6">
                   <AvatarImage src={data?.avatar || "/diverse-user-avatars.png"} alt="User" />
                   <AvatarFallback className="text-xs sm:text-sm bg-green-500 text-white">
                     {data?.name ? data.name.charAt(0).toUpperCase() : "A"}

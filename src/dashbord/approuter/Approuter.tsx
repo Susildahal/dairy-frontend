@@ -2,6 +2,7 @@ import React, { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import Loading from "../ui/Loading";
+import ProtectedRoute from "../../components/ProtectedRoute";
 
 // Lazy load layouts
 const UserLayout = lazy(() => import("../layouts/UserLayout"));
@@ -13,8 +14,11 @@ const NotFound = lazy(() => import("../common/NotFound"));
 const User = lazy(() => import("../pages/admin/UsersDetails"));
 
 // Lazy load pages
+const LandingPage = lazy(() => import("../pages/public/LandingPage"));
 const UserHome = lazy(() => import("../pages/user/UserHome"));
+const UserDashboard = lazy(() => import("../pages/user/UserDashboard"));
 const AdminDashboard = lazy(() => import("../pages/admin/AdminDashboard"));
+const MilkManagement = lazy(() => import("../pages/admin/MilkManagement"));
 // Typed lazy import so the Createuser component can accept the `isedit` prop
 const Createuser = lazy(() => import("../pages/admin/Createuser")) as unknown as React.ComponentType<{ isedit?: boolean }>;
 const Settings = lazy(() => import("../pages/admin/setting"));
@@ -26,36 +30,57 @@ export default function AppRouter() {
         <BrowserRouter>
             <Suspense fallback={<Loading />}>
                 <Routes>
+                    {/* Public Landing Page - Available for everyone */}
+                    <Route path="/" element={<LandingPage />} />
+                    
                     {/* Public Routes */}
                     <Route path="/login" element={<Login />} />
                     
-                    {/* User Routes */}
-                    <Route path="/" element={<UserLayout />}>
+                    {/* User Routes - Accessible to both users and admins */}
+                    <Route path="/user" element={
+                        <ProtectedRoute>
+                            <UserLayout />
+                        </ProtectedRoute>
+                    }>
                         <Route index element={<UserHome />} />
+                        <Route path="dashboard" element={<UserDashboard />} />
                         <Route path="products" element={<div>Products Page</div>} />
                         <Route path="about" element={<div>About Page</div>} />
                         <Route path="contact" element={<div>Contact Page</div>} />
                     </Route>
 
-                    {/* Admin Routes */}
-                    <Route path="/admin" element={<AdminLayout />}>
+                    {/* Admin Routes - Only accessible to admin users */}
+                    <Route path="/admin" element={
+                        <ProtectedRoute adminOnly>
+                            <AdminLayout />
+                        </ProtectedRoute>
+                    }>
                         <Route index element={<Navigate to="/admin/dashboard" replace />} />
                         <Route path="dashboard" element={<AdminDashboard />} />
+                        <Route path="user-dashboard" element={<UserDashboard />} />
                         <Route path="users" element={<User />} />
-                        <Route path="/admin/milk" element={<Addmilk />} />
+                        <Route path="milk" element={<Addmilk />} />
+                        <Route path="milk-management" element={<MilkManagement />} />
                         <Route path="settings" element={<Settings />} />
                         <Route path="users/create" element={<Createuser />} />
                         <Route path="users/create/:id" element={<Createuser isedit={true} />} />
-                        <Route path="/admin/user-daily" element={<Userdaily />} />
+                        <Route path="user-reports" element={<Userdaily />} />
                         <Route path="add-month" element={<MonthManagement />} />
-
+                        
+                        {/* Admin can also access user dashboard */}
+                        <Route path="user-dashboard" element={<UserDashboard />} />
                     </Route>
 
-                    {/* Legacy redirects */}
-                    <Route path="/dashboard" element={<Navigate to="/admin/dashboard" replace />} />
-                    <Route path="/dashbord" element={<Navigate to="/admin/dashboard" replace />} />
+                    {/* Standalone protected dashboard route for users */}
+                    <Route path="/dashboard" element={
+                        <ProtectedRoute>
+                            <UserDashboard />
+                        </ProtectedRoute>
+                    } />
                     
-                  
+                    {/* Legacy redirects */}
+                    <Route path="/dashbord" element={<Navigate to="/dashboard" replace />} />
+                    
                     <Route path="*" element={<NotFound />} />
                 </Routes>
             </Suspense>

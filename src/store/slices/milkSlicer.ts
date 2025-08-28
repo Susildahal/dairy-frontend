@@ -19,6 +19,10 @@ export interface UserTotal {
   totalMilk: number
   totalMoney: number
   monthid: string
+  monthName?: string
+  monthDetails?: any
+  createdAt?: string
+  updatedAt?: string
 }
 
 export interface AdminTotal {
@@ -26,28 +30,39 @@ export interface AdminTotal {
   monthid: string
   totalMilk: number
   totalMoney: number
+  monthName?: string
+  monthDetails?: any
+  createdAt?: string
+  updatedAt?: string
 }
 
 interface MilkState {
   milkEntries: MilkEntry[]
   userTotals: UserTotal[]
-
-  adminTotal: AdminTotal | null
+  adminTotals: AdminTotal[]
+  userHistory: MilkEntry[]
+  monthTotals: UserTotal[]
   loading: boolean
   saveLoading: boolean
+  userHistoryLoading: boolean
+  monthTotalsLoading: boolean
   error: string | null
 }
 
 const initialState: MilkState = {
   milkEntries: [],
   userTotals: [],
-  adminTotal: null,
+  adminTotals: [],
+  userHistory: [],
+  monthTotals: [],
   loading: false,
   saveLoading: false,
+  userHistoryLoading: false,
+  monthTotalsLoading: false,
   error: null
 }
 
-// Save milk entry
+// Save milk entry - POST /milk/savemilk
 export const saveMilk = createAsyncThunk(
   'milk/saveMilk',
   async (milkData: {
@@ -61,80 +76,38 @@ export const saveMilk = createAsyncThunk(
       const response = await axiosInstance.post('/milk/savemilk', milkData)
       return response.data.data
     } catch (error: any) {
-      // Fallback mock data for development
-      const mockResponse = {
-        daily: {
-          _id: Date.now().toString(),
-          userid: milkData.userid,
-          name: milkData.name,
-          todaymilk: milkData.todaymilk,
-          todaymoney: milkData.todaymoney,
-          todayfit: milkData.todayfit,
-          monthid: 'mock-month-id',
-          createdAt: new Date().toISOString()
-        },
-        userTotal: {
-          _id: `user-total-${milkData.userid}`,
-          userid: milkData.userid,
-          name: milkData.name,
-          totalMilk: milkData.todaymilk,
-          totalMoney: milkData.todaymoney,
-          monthid: 'mock-month-id'
-        },
-        adminTotal: {
-          _id: 'admin-total-mock',
-          monthid: 'mock-month-id',
-          totalMilk: milkData.todaymilk,
-          totalMoney: milkData.todaymoney
-        }
-      }
-      return mockResponse
+      throw error
     }
   }
 )
 
-// Get milk entries for today
-export const getTodayMilkEntries = createAsyncThunk(
-  'milk/getTodayEntries',
-  async () => {
-    try {
-      const response = await axiosInstance.get('/milk/today')
-      return response.data.data
-    } catch (error: any) {
-      return []
-    }
-  }
-)
-
-
-
-
-// Fetch all milk entries
-export const fetchAllMilkEntries = createAsyncThunk(
-  'milk/fetchAllEntries',
+// Get all milk entries - GET /milk/allmilk
+export const getAllMilk = createAsyncThunk(
+  'milk/getAllMilk',
   async () => {
     try {
       const response = await axiosInstance.get('/milk/allmilk')
       return response.data.data
     } catch (error: any) {
-      return []
-    }
-  }
-)
-// Get user totals for current month
-export const getUserTotals = createAsyncThunk(
-  'milk/getUserTotals',
-  async () => {
-    try {
-      const response = await axiosInstance.get('/milk/user-totals')
-      return response.data.data
-    } catch (error: any) {
-      return []
+      throw error
     }
   }
 )
 
-// Get admin total for current month
+// Get daily user history - GET /milk/dailyuserhistory (auth-based)
+export const getDailyUserHistory = createAsyncThunk(
+  'milk/getDailyUserHistory',
+  async () => {
+    try {
+      const response = await axiosInstance.get('/milk/dailyuserhistory')
+      return response.data.data
+    } catch (error: any) {
+      throw error
+    }
+  }
+)
+
+// Get admin total - GET /milk/admin-total
 export const getAdminTotal = createAsyncThunk(
   'milk/getAdminTotal',
   async () => {
@@ -142,7 +115,33 @@ export const getAdminTotal = createAsyncThunk(
       const response = await axiosInstance.get('/milk/admin-total')
       return response.data.data
     } catch (error: any) {
-      return null
+      throw error
+    }
+  }
+)
+
+// Get user monthly total - GET /milk/usermonthly (auth-based)
+export const getUserMonthly = createAsyncThunk(
+  'milk/getUserMonthly',
+  async () => {
+    try {
+      const response = await axiosInstance.get('/milk/usermonthly')
+      return response.data.data
+    } catch (error: any) {
+      throw error
+    }
+  }
+)
+
+// Get total month data - GET /milk/total-month
+export const getTotalMonth = createAsyncThunk(
+  'milk/getTotalMonth',
+  async () => {
+    try {
+      const response = await axiosInstance.get('/milk/total-month')
+      return response.data.data
+    } catch (error: any) {
+      throw error
     }
   }
 )
@@ -176,50 +175,89 @@ const milkSlice = createSlice({
           state.userTotals.push(action.payload.userTotal)
         }
         
-        // Update admin total
-        state.adminTotal = action.payload.adminTotal
+        // Update admin totals
+        const existingAdminTotalIndex = state.adminTotals.findIndex(
+          total => total.monthid === action.payload.adminTotal.monthid
+        )
+        if (existingAdminTotalIndex >= 0) {
+          state.adminTotals[existingAdminTotalIndex] = action.payload.adminTotal
+        } else {
+          state.adminTotals.push(action.payload.adminTotal)
+        }
       })
       .addCase(saveMilk.rejected, (state, action) => {
         state.saveLoading = false
         state.error = action.error.message || 'Failed to save milk entry'
       })
       
-      // Get today's entries
-      .addCase(getTodayMilkEntries.pending, (state) => {
+      // Get all milk entries
+      .addCase(getAllMilk.pending, (state) => {
         state.loading = true
+        state.error = null
       })
-      .addCase(getTodayMilkEntries.fulfilled, (state, action) => {
+      .addCase(getAllMilk.fulfilled, (state, action) => {
         state.loading = false
         state.milkEntries = action.payload
       })
-      .addCase(getTodayMilkEntries.rejected, (state, action) => {
+      .addCase(getAllMilk.rejected, (state, action) => {
         state.loading = false
         state.error = action.error.message || 'Failed to fetch milk entries'
       })
       
-    
-      // Get user totals
-      .addCase(getUserTotals.fulfilled, (state, action) => {
-        state.userTotals = action.payload
+      // Get daily user history
+      .addCase(getDailyUserHistory.pending, (state) => {
+        state.userHistoryLoading = true
+        state.error = null
+      })
+      .addCase(getDailyUserHistory.fulfilled, (state, action) => {
+        state.userHistoryLoading = false
+        state.userHistory = action.payload
+      })
+      .addCase(getDailyUserHistory.rejected, (state, action) => {
+        state.userHistoryLoading = false
+        state.error = action.error.message || 'Failed to fetch user history'
       })
       
-      // Fetch all milk entries
-      .addCase(fetchAllMilkEntries.pending, (state) => {
+      // Get admin total
+      .addCase(getAdminTotal.pending, (state) => {
         state.loading = true
         state.error = null
       })
-      .addCase(fetchAllMilkEntries.fulfilled, (state, action) => {
-        state.loading = false
-        state.milkEntries = action.payload
-      })
-      .addCase(fetchAllMilkEntries.rejected, (state, action) => {
-        state.loading = false
-        state.error = action.error.message || 'Failed to fetch all milk entries'
-      })
-
-      // Get admin total
       .addCase(getAdminTotal.fulfilled, (state, action) => {
-        state.adminTotal = action.payload
+        state.loading = false
+        state.adminTotals = action.payload
+      })
+      .addCase(getAdminTotal.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.error.message || 'Failed to fetch admin total'
+      })
+      
+      // Get user monthly total
+      .addCase(getUserMonthly.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(getUserMonthly.fulfilled, (state, action) => {
+        state.loading = false
+        state.userTotals = action.payload
+      })
+      .addCase(getUserMonthly.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.error.message || 'Failed to fetch user monthly data'
+      })
+      
+      // Get total month
+      .addCase(getTotalMonth.pending, (state) => {
+        state.monthTotalsLoading = true
+        state.error = null
+      })
+      .addCase(getTotalMonth.fulfilled, (state, action) => {
+        state.monthTotalsLoading = false
+        state.monthTotals = action.payload
+      })
+      .addCase(getTotalMonth.rejected, (state, action) => {
+        state.monthTotalsLoading = false
+        state.error = action.error.message || 'Failed to fetch month totals'
       })
   }
 })
