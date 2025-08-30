@@ -63,7 +63,7 @@ export default function AppRouter() {
                         <Route path="milk-management" element={<MilkManagement />} />
                         <Route path="settings" element={<Settings />} />
                         <Route path="users/create" element={<Createuser />} />
-                        <Route path="users/create/:id" element={<Createuser isedit={true} />} />
+                        <Route path="/admin/users/edit/:id" element={<Createuser isedit={true} />} />
                         <Route path="user-reports" element={<Userdaily />} />
                         <Route path="add-month" element={<MonthManagement />} />
                         
