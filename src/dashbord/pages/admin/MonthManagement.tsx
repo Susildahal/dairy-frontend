@@ -52,20 +52,20 @@ import {
 import Loading from '../../ui/Loading'
 
 interface CreateMonthForm {
-  year: number
+  year: string
   month: string
   status: boolean
 }
 
 const MONTHS = [
-  'Baiskake', 'jeth', 'Ashar', 'shawarn', 'Bhadra', 'ashoj',
-  'Kartik', 'Mangshir', 'Poush', 'Magh', 'Falgun', 'Chitra'
+  'बैशाख', 'जेठ', 'अषार', 'श्रावण', 'भाद्र', 'आश्विन',
+  'कार्तिक', 'मंसिर', 'पौष', 'माघ', 'फाल्गुन', 'चैत्र'
 ]
 
 const MonthManagement = () => {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [formData, setFormData] = useState<CreateMonthForm>({
-    year: new Date().getFullYear(),
+    year: '',
     month: '',
     status: false
   })
@@ -95,18 +95,34 @@ const MonthManagement = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
+    if (!formData.year) {
+      toast.error("Please enter a year")
+      return
+    }
+
+    if (formData.year.length) {
+      toast.error("Please enter a valid year")
+      return
+    }
+
     if (!formData.month) {
       toast.error("Please select a month")
       return
     }
 
+    // Keep year as string per requirement
+    const payload = {
+      ...formData,
+      year: parseInt(formData.year) // Parse to number if backend expects it
+    }
+
     try {
-      await dispatch(createMonth(formData)).unwrap()
+      await dispatch(createMonth(payload)).unwrap()
       toast.success("Month created successfully!")
       setIsModalOpen(false)
       setFormData({
-        year: new Date().getFullYear(),
+        year: '',
         month: '',
         status: false
       })
@@ -123,8 +139,7 @@ const MonthManagement = () => {
       console.error('Failed to activate month:', error)
     }
   }
-
-  const handleDelete = async (monthId: string, monthName: string, year: number) => {
+  const handleDelete = async (monthId: string, monthName: string, year: string) => {
     if (window.confirm(`Are you sure you want to delete ${monthName} ${year}?`)) {
       try {
         await dispatch(deleteMonth(monthId)).unwrap()
@@ -200,11 +215,9 @@ const MonthManagement = () => {
                     </Label>
                     <Input
                       id="year"
-                      type="number"
-                      min={2000}
-                      max={2100}
+                      type="text"
                       value={formData.year}
-                      onChange={(e) => setFormData({...formData, year: parseInt(e.target.value)})}
+                      onChange={(e) => setFormData({...formData, year: e.target.value})}
                       required
                       className="bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700"
                     />
@@ -222,9 +235,9 @@ const MonthManagement = () => {
                         <SelectValue placeholder="Select month" />
                       </SelectTrigger>
                       <SelectContent>
-                        {MONTHS.map((month) => (
-                          <SelectItem key={month} value={month}>
-                            {month}
+                        {MONTHS.map((monthName) => (
+                          <SelectItem key={monthName} value={monthName}>
+                            {monthName}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -335,43 +348,9 @@ const MonthManagement = () => {
         </Card>
       )}
 
-      {/* Filter Controls */}
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
-        <div className="flex items-center gap-3">
-          <Filter className="h-5 w-5 text-gray-500" />
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Filter by Year:</span>
-          <Select value={filterYear} onValueChange={handleFilterChange}>
-            <SelectTrigger className="w-32 bg-white dark:bg-gray-800">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Years</SelectItem>
-              {Array.from(new Set(months.map(m => m.year))).sort((a, b) => b - a).map((year) => (
-                <SelectItem key={year} value={year.toString()}>
-                  {year}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        
-        <div className="text-sm text-gray-600 dark:text-gray-400">
-          {filteredMonths.length} month(s) {filterYear !== 'all' ? `for year ${filterYear}` : 'total'}
-        </div>
-      </div>
+    
 
-      {/* Months Table
-      <Card className="shadow-sm p-3">
-      
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-            <div>
-              <CardTitle className="text-lg">Months Overview</CardTitle>
-              <CardDescription className="mt-1">
-                {filteredMonths.length} month(s) {filterYear !== 'all' ? `for year ${filterYear}` : 'total'}
-              </CardDescription>
-            </div>
-          </div>
-        </Card> */}
+    
       
           <div className="overflow-x-auto">
             <Table>
@@ -445,7 +424,7 @@ const MonthManagement = () => {
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => handleDelete(month._id, month.month, month.year)}
+                              onClick={() => handleDelete(month._id, month.month, month.year.toString())}
                               disabled={deleteLoading}
                               className="text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300 h-8 w-8 p-0"
                             >
@@ -469,45 +448,7 @@ const MonthManagement = () => {
           </div>
    
 
-      {/* Info Section */}
-      <Card className="bg-blue-50 dark:bg-blue-900/10 border-blue-200 dark:border-blue-800">
-        <CardContent className="pt-6">
-          <div className="flex items-start gap-4">
-            <div className="flex-shrink-0">
-              <div className="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center">
-                <span className="text-white text-sm font-bold">i</span>
-              </div>
-            </div>
-            <div className="space-y-3">
-              <p className="text-base font-semibold text-blue-800 dark:text-blue-200">
-                Month Management Guidelines
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <ul className="text-sm text-blue-700 dark:text-blue-300 space-y-2">
-                  <li className="flex items-start gap-2">
-                    <span className="text-blue-500 mt-1">•</span>
-                    <span>Only one month can be active at a time</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-blue-500 mt-1">•</span>
-                    <span>Active months cannot be deleted - activate another month first</span>
-                  </li>
-                </ul>
-                <ul className="text-sm text-blue-700 dark:text-blue-300 space-y-2">
-                  <li className="flex items-start gap-2">
-                    <span className="text-blue-500 mt-1">•</span>
-                    <span>Creating an active month will automatically deactivate others</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-blue-500 mt-1">•</span>
-                    <span>Each year-month combination must be unique</span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+     
     </div>
   )
 }

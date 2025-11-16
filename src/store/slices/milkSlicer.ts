@@ -9,7 +9,9 @@ export interface MilkEntry {
   todaymoney: number
   todayfit: number
   monthid: string
+  session: 'morning' | 'night'  // Add session field
   createdAt: string
+  updatedAt?: string
 }
 
 export interface UserTotal {
@@ -42,6 +44,16 @@ interface MilkState {
   adminTotals: AdminTotal[]
   userHistory: MilkEntry[]
   monthTotals: UserTotal[]
+  pagination: {
+    currentPage: number
+    totalPages: number
+    totalItems: number
+    itemsPerPage: number
+    hasNextPage: boolean
+    hasPrevPage: boolean
+    nextPage: number | null
+    prevPage: number | null
+  }
   loading: boolean
   saveLoading: boolean
   userHistoryLoading: boolean
@@ -55,6 +67,16 @@ const initialState: MilkState = {
   adminTotals: [],
   userHistory: [],
   monthTotals: [],
+  pagination: {
+    currentPage: 1,
+    totalPages: 1,
+    totalItems: 0,
+    itemsPerPage: 10,
+    hasNextPage: false,
+    hasPrevPage: false,
+    nextPage: null,
+    prevPage: null
+  },
   loading: false,
   saveLoading: false,
   userHistoryLoading: false,
@@ -62,7 +84,7 @@ const initialState: MilkState = {
   error: null
 }
 
-// Save milk entry - POST /milk/savemilk
+// Save milk entry with session type - POST /milk/savemilk
 export const saveMilk = createAsyncThunk(
   'milk/saveMilk',
   async (milkData: {
@@ -71,80 +93,154 @@ export const saveMilk = createAsyncThunk(
     todaymilk: number
     todaymoney: number
     todayfit: number
-  }) => {
+    session?: 'morning' | 'night'  // Add session type
+  }, { rejectWithValue }) => {
     try {
       const response = await axiosInstance.post('/milk/savemilk', milkData)
-      return response.data.data
+      
+      // Handle different response formats
+      if (response.status === 200 || response.status === 201) {
+        // Check if response has the expected structure
+        if (response.data) {
+          return response.data.data || response.data
+        }
+        return response.data
+      } else {
+        return rejectWithValue(`Unexpected response status: ${response.status}`)
+      }
     } catch (error: any) {
-      throw error
+      console.error('SaveMilk API Error:', error)
+      
+      // Check if it's a network error but data was actually saved
+      if (error.response) {
+        // Server responded with an error status
+        const status = error.response.status
+        const message = error.response.data?.message || error.response.data?.error || `Server error (${status})`
+        return rejectWithValue(message)
+      } else if (error.request) {
+        // Network error - request was made but no response
+        return rejectWithValue('Network error - please check your connection')
+      } else {
+        // Something else happened
+        return rejectWithValue(error.message || 'Unknown error occurred')
+      }
     }
   }
 )
 
-// Get all milk entries - GET /milk/allmilk
+// Get all milk entries with advanced filtering - GET /milk/allmilk
 export const getAllMilk = createAsyncThunk(
   'milk/getAllMilk',
-  async () => {
+  async (filters?: {
+    session?: 'morning' | 'night'
+    monthid?: string
+    userid?: string
+    startDate?: string
+    endDate?: string
+    page?: number
+    limit?: number
+  }) => {
     try {
-      const response = await axiosInstance.get('/milk/allmilk')
-      return response.data.data
+      const params: any = {}
+      
+      if (filters) {
+        if (filters.session) params.session = filters.session
+        if (filters.monthid) params.monthid = filters.monthid
+        if (filters.userid) params.userid = filters.userid
+        if (filters.startDate) params.startDate = filters.startDate
+        if (filters.endDate) params.endDate = filters.endDate
+        if (filters.page) params.page = filters.page
+        if (filters.limit) params.limit = filters.limit
+      }
+      
+      const response = await axiosInstance.get('/milk/allmilk', { params })
+      
+      // Return both data and pagination
+      return {
+        data: response.data.data,
+        pagination: response.data.pagination,
+        count: response.data.count
+      }
     } catch (error: any) {
       throw error
     }
   }
 )
 
-// Get daily user history - GET /milk/dailyuserhistory (auth-based)
+// Update milk entry - PUT /milk/updatemilk/:id
+export const updateMilk = createAsyncThunk(
+  'milk/updateMilk',
+  async ({ 
+    id, 
+    updateData 
+  }: { 
+    id: string, 
+    updateData: {
+      userid: string
+      name: string
+      todaymilk: number
+      todaymoney: number
+      todayfit: number
+      session: 'morning' | 'night'
+    } 
+  }, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.put(`/milk/updatemilk/${id}`, updateData)
+      
+      if (response.status === 200) {
+        return response.data
+      } else {
+        return rejectWithValue(`Unexpected response status: ${response.status}`)
+      }
+    } catch (error: any) {
+      console.error('UpdateMilk API Error:', error)
+      
+      if (error.response) {
+        const message = error.response.data?.message || error.response.data?.error || `Server error (${error.response.status})`
+        return rejectWithValue(message)
+      } else if (error.request) {
+        return rejectWithValue('Network error - please check your connection')
+      } else {
+        return rejectWithValue(error.message || 'Unknown error occurred')
+      }
+    }
+  }
+)
+
+// Get daily user history with optional session filter - GET /milk/dailyuserhistory
 export const getDailyUserHistory = createAsyncThunk(
   'milk/getDailyUserHistory',
-  async () => {
+  async (session: 'morning' | 'night' | undefined, { rejectWithValue }) => {
     try {
-      const response = await axiosInstance.get('/milk/dailyuserhistory')
-      return response.data.data
+      const params: any = {}
+      if (session) {
+        params.session = session
+      }
+      
+      const response = await axiosInstance.get('/milk/dailyuserhistory', { params })
+      
+      if (response.status === 200) {
+        return response.data.data || response.data
+      } else {
+        return rejectWithValue(`Unexpected response status: ${response.status}`)
+      }
     } catch (error: any) {
-      throw error
+      console.error('GetDailyUserHistory API Error:', error)
+      
+      if (error.response) {
+        const message = error.response.data?.message || error.response.data?.error || `Server error (${error.response.status})`
+        return rejectWithValue(message)
+      } else if (error.request) {
+        return rejectWithValue('Network error - please check your connection')
+      } else {
+        return rejectWithValue(error.message || 'Unknown error occurred')
+      }
     }
   }
 )
 
-// Get admin total - GET /milk/admin-total
-export const getAdminTotal = createAsyncThunk(
-  'milk/getAdminTotal',
-  async () => {
-    try {
-      const response = await axiosInstance.get('/milk/admin-total')
-      return response.data.data
-    } catch (error: any) {
-      throw error
-    }
-  }
-)
 
-// Get user monthly total - GET /milk/usermonthly (auth-based)
-export const getUserMonthly = createAsyncThunk(
-  'milk/getUserMonthly',
-  async () => {
-    try {
-      const response = await axiosInstance.get('/milk/usermonthly')
-      return response.data.data
-    } catch (error: any) {
-      throw error
-    }
-  }
-)
 
-// Get total month data - GET /milk/total-month
-export const getTotalMonth = createAsyncThunk(
-  'milk/getTotalMonth',
-  async () => {
-    try {
-      const response = await axiosInstance.get('/milk/total-month')
-      return response.data.data
-    } catch (error: any) {
-      throw error
-    }
-  }
-)
 
 const milkSlice = createSlice({
   name: 'milk',
@@ -197,11 +293,31 @@ const milkSlice = createSlice({
       })
       .addCase(getAllMilk.fulfilled, (state, action) => {
         state.loading = false
-        state.milkEntries = action.payload
+        state.milkEntries = action.payload.data
+        state.pagination = action.payload.pagination
       })
       .addCase(getAllMilk.rejected, (state, action) => {
         state.loading = false
         state.error = action.error.message || 'Failed to fetch milk entries'
+      })
+      
+      // Update milk entry
+      .addCase(updateMilk.pending, (state) => {
+        state.loading = true
+        state.error = null
+      })
+      .addCase(updateMilk.fulfilled, (state, action) => {
+        state.loading = false
+        
+        // Update the milk entry in the list
+        const index = state.milkEntries.findIndex(entry => entry._id === action.payload._id)
+        if (index !== -1) {
+          state.milkEntries[index] = action.payload
+        }
+      })
+      .addCase(updateMilk.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload as string || 'Failed to update milk entry'
       })
       
       // Get daily user history
@@ -216,48 +332,6 @@ const milkSlice = createSlice({
       .addCase(getDailyUserHistory.rejected, (state, action) => {
         state.userHistoryLoading = false
         state.error = action.error.message || 'Failed to fetch user history'
-      })
-      
-      // Get admin total
-      .addCase(getAdminTotal.pending, (state) => {
-        state.loading = true
-        state.error = null
-      })
-      .addCase(getAdminTotal.fulfilled, (state, action) => {
-        state.loading = false
-        state.adminTotals = action.payload
-      })
-      .addCase(getAdminTotal.rejected, (state, action) => {
-        state.loading = false
-        state.error = action.error.message || 'Failed to fetch admin total'
-      })
-      
-      // Get user monthly total
-      .addCase(getUserMonthly.pending, (state) => {
-        state.loading = true
-        state.error = null
-      })
-      .addCase(getUserMonthly.fulfilled, (state, action) => {
-        state.loading = false
-        state.userTotals = action.payload
-      })
-      .addCase(getUserMonthly.rejected, (state, action) => {
-        state.loading = false
-        state.error = action.error.message || 'Failed to fetch user monthly data'
-      })
-      
-      // Get total month
-      .addCase(getTotalMonth.pending, (state) => {
-        state.monthTotalsLoading = true
-        state.error = null
-      })
-      .addCase(getTotalMonth.fulfilled, (state, action) => {
-        state.monthTotalsLoading = false
-        state.monthTotals = action.payload
-      })
-      .addCase(getTotalMonth.rejected, (state, action) => {
-        state.monthTotalsLoading = false
-        state.error = action.error.message || 'Failed to fetch month totals'
       })
   }
 })

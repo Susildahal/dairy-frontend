@@ -46,23 +46,28 @@ export default function LoginPage() {
       })
 
       if (response.status === 200) {
+        // Set flag first
+        localStorage.setItem("flag","true")
+        
         // Call login to get user data and set auth state
         const userData = await login()
         
         apiToast.login.success()
         
-        // Navigate based on role
+        // Navigate based on role with a delay to ensure state is updated
         setTimeout(() => {
           if (userData.role === 'admin') {
             navigator("/admin/dashboard")
           } else {
             navigator("/dashboard")
           }
-        }, 1000)
+        }, 500) // Reduced delay but still ensures state update
       } else { 
         throw new Error("Login failed")
       }
     } catch (error: any) {
+      // Clear flag on error
+      localStorage.removeItem("flag")
       const message = error?.response?.data?.message || error?.message || "Login failed"
       setError(message)
     } finally {

@@ -1,466 +1,628 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useMemo } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { RootState, AppDispatch } from '../../../store/store'
-import {
-  saveMilk,
-  getAllMilk,
-  getDailyUserHistory,
-  getAdminTotal,
-  getUserMonthly,
-  getTotalMonth,
-  clearError
-} from '../../../store/slices/milkSlicer'
-import { getdata } from '../../../store/slices/userSlicer'
-import { getAllMonths } from '../../../store/slices/monthslicer'
+import { getAllMilk, updateMilk } from '../../../store/slices/milkSlicer'
+import { getAllMonths } from "../../../store/slices/monthslicer"
+import { getdata } from "../../../store/slices/userSlicer"
+import { UserPDFModal } from './components/UserPDFModal'
+import axios from 'axios'
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../components/ui/card"
 import { Button } from "../../../components/ui/button"
-import { Input } from "../../../components/ui/input"
-import { Label } from "../../../components/ui/label"
 import { Badge } from "../../../components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../components/ui/table"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "../../../components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/ui/select"
-import { toast } from "sonner"
-import { Plus, Eye, TrendingUp, Users, DollarSign, Milk } from 'lucide-react'
+import { Input } from "../../../components/ui/input"
+import { Label } from "../../../components/ui/label"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../../../components/ui/dialog"
+import { 
+  Calendar, Download, FileText, RotateCcw, ChevronLeft, ChevronRight, 
+  ChevronsLeft, ChevronsRight, Edit, Search, Filter, PlusCircle, ArrowUpDown, 
+  Pencil
+} from "lucide-react"
+import { toast } from 'sonner'
 
-interface MilkFormData {
+interface FilterParams {
+  userid?: string
+  monthid?: string
+  session?: 'morning' | 'night'
+  page?: number
+  limit?: number
+}
+
+interface MilkEntry {
+  _id: string
+  userid: string
+  monthid: string
+  session: 'morning' | 'night'
+  todaymilk: number
+  todayfit: number
+  todaymoney: number
+  createdAt: string
+  updatedAt: string
+}
+
+interface UpdateMilkEntryData {
   userid: string
   name: string
   todaymilk: number
-  todaymoney: number
   todayfit: number
+  todaymoney: number
+  session: 'morning' | 'night'
 }
 
 const MilkManagement: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>()
-  const { 
-    milkEntries, 
-    userTotals, 
-    adminTotals, 
-    userHistory, 
-    monthTotals,
-    loading, 
-    saveLoading, 
-    userHistoryLoading,
-    monthTotalsLoading,
-    error 
-  } = useSelector((state: RootState) => state.milk)
-  const { data: users } = useSelector((state: RootState) => state.user)
+  const { milkEntries, loading, error, pagination } = useSelector((state: RootState) => state.milk)
+  const { data } = useSelector((state: RootState) => state.user)
   const { months } = useSelector((state: RootState) => state.months)
 
-  const [isAddMilkOpen, setIsAddMilkOpen] = useState(false)
-  const [isUserHistoryOpen, setIsUserHistoryOpen] = useState(false)
-  const [selectedUserId, setSelectedUserId] = useState('')
-  const [selectedMonthId, setSelectedMonthId] = useState('')
-  const [formData, setFormData] = useState<MilkFormData>({
+  // Filter states
+  const [filters, setFilters] = useState<FilterParams>({
+    page: 1,
+    limit: 10
+  })
+  const [selectedFilter, setSelectedFilter] = useState<'all' | 'morning' | 'night'>('all')
+  const [showUserReportModal, setShowUserReportModal] = useState(false)
+  
+  // Update milk entry state
+  const [updateModalOpen, setUpdateModalOpen] = useState(false)
+  const [selectedEntry, setSelectedEntry] = useState<MilkEntry | null>(null)
+  const [updateData, setUpdateData] = useState<UpdateMilkEntryData>({
     userid: '',
     name: '',
     todaymilk: 0,
+    todayfit: 0,
     todaymoney: 0,
-    todayfit: 0
+    session: 'morning'
   })
+  const [updateLoading, setUpdateLoading] = useState(false)
 
   useEffect(() => {
-    dispatch(getdata())
-    dispatch(getAllMonths())
-    dispatch(getAllMilk())
-    dispatch(getUserMonthly())
-    dispatch(getAdminTotal())
-  }, [dispatch])
+    if(!months || months.length === 0)
+      dispatch(getAllMonths())
+  }, [dispatch, months])
 
   useEffect(() => {
-    if (error) {
-      toast.error(error)
-      dispatch(clearError())
-    }
-  }, [error, dispatch])
+    if(!data || data.length === 0)
+      dispatch(getdata())
+  }, [dispatch, data])
 
-  const handleAddMilk = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    if (!formData.userid || !formData.name || formData.todaymilk <= 0) {
-      toast.error('Please fill all required fields')
-      return
+  // Fetch milk data with filters
+  const fetchMilkData = () => {
+    const params: any = { ...filters }
+    if (selectedFilter !== 'all') {
+      params.session = selectedFilter
     }
-
-    try {
-      await dispatch(saveMilk(formData)).unwrap()
-      toast.success('Milk entry added successfully!')
-      setFormData({
-        userid: '',
-        name: '',
-        todaymilk: 0,
-        todaymoney: 0,
-        todayfit: 0
-      })
-      setIsAddMilkOpen(false)
-      
-      // Refresh data
-      dispatch(getAllMilk())
-      dispatch(getUserMonthly())
-      dispatch(getAdminTotal())
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to add milk entry')
-    }
+    dispatch(getAllMilk(params))
   }
 
-  const handleUserSelect = (userid: string) => {
-    const selectedUser = users.find(user => user._id === userid)
-    if (selectedUser) {
-      setFormData(prev => ({
+  useEffect(() => {
+    fetchMilkData()
+  }, [filters, selectedFilter])
+
+  // Handle filter changes
+  const handleFilterChange = (key: keyof FilterParams, value: any) => {
+    setFilters(prev => ({
+      ...prev,
+      [key]: value,
+      page: 1 // Reset to first page when filters change
+    }))
+  }
+
+  // Handle pagination
+  const handlePageChange = (page: number) => {
+    setFilters(prev => ({ ...prev, page }))
+  }
+
+  // Reset all filters
+  const handleResetFilters = () => {
+    setFilters({
+      page: 1,
+      limit: 10
+    })
+    setSelectedFilter('all')
+  }
+
+  // Open update modal with selected entry
+  const handleOpenUpdateModal = (entry: MilkEntry) => {
+    setSelectedEntry(entry)
+    const user = data?.find((u: any) => u._id === entry.userid)
+    
+    setUpdateData({
+      userid: entry.userid,
+      name: user?.name || 'Unknown User',
+      todaymilk: entry.todaymilk,
+      todayfit: entry.todayfit,
+      todaymoney: entry.todaymoney,
+      session: entry.session
+    })
+    setUpdateModalOpen(true)
+  }
+
+  // Handle input changes for update modal
+  const handleUpdateInputChange = (field: keyof UpdateMilkEntryData, value: number) => {
+    setUpdateData(prev => ({
+      ...prev,
+      [field]: value
+    }))
+    
+    // Auto-calculate money if milk or fat changes (you can adjust this formula)
+    if (field === 'todaymilk' || field === 'todayfit') {
+      const rate = 80 // Base rate per liter
+      const fatBonus = 2 // Rs per fat percentage point
+      const milk = field === 'todaymilk' ? value : updateData.todaymilk
+      const fat = field === 'todayfit' ? value : updateData.todayfit
+      
+      const calculatedMoney = milk * (rate + (fat * fatBonus))
+      setUpdateData(prev => ({
         ...prev,
-        userid: selectedUser._id,
-        name: selectedUser.name
+        todaymoney: Math.round(calculatedMoney)
       }))
     }
   }
 
-  const handleViewUserHistory = (userid: string) => {
-    setSelectedUserId(userid)
-    // Note: Since dailyuserhistory is auth-based in backend, 
-    // this won't work for viewing other users. Admin needs a separate endpoint.
-    dispatch(getDailyUserHistory())
-    setIsUserHistoryOpen(true)
+  // Update milk entry
+  const handleUpdateMilkEntry = async () => {
+    if (!selectedEntry) return
+    
+    try {
+      setUpdateLoading(true)
+      
+      // Use Redux thunk to update milk entry
+      const result = await dispatch(updateMilk({
+        id: selectedEntry._id,
+        updateData
+      })).unwrap()
+      
+      // Close modal and show success message
+      setUpdateModalOpen(false)
+      toast.success('Milk entry updated successfully')
+      
+      // Refresh data
+      fetchMilkData()
+    } catch (error: any) {
+      console.error('Error updating milk entry:', error)
+      toast.error(typeof error === 'string' ? error : 'Failed to update milk entry')
+    } finally {
+      setUpdateLoading(false)
+    }
   }
 
-  const handleViewMonthTotals = () => {
-    dispatch(getTotalMonth())
+  // Export to CSV
+  const handleExportCSV = () => {
+    const params = new URLSearchParams()
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== '') {
+        params.append(key, String(value))
+      }
+    })
+    if (selectedFilter !== 'all') {
+      params.append('session', selectedFilter)
+    }
+    params.append('export', 'csv')
+    
+    window.open(`${process.env.VITE_API_BASE_URL}/milk/allmilk?${params.toString()}`, '_blank')
   }
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    })
+    return new Date(dateString).toLocaleDateString('en-GB')
   }
 
-  const formatCurrency = (amount: number) => {
-    return `₹${amount.toFixed(2)}`
+  // Fixed formatNepaliNumber function to handle non-numeric inputs safely
+  const formatNepaliNumber = (num: number | null | undefined): string => {
+    if (num === null || num === undefined) return '०'
+    
+    const nepaliDigits = ['०', '१', '२', '३', '४', '५', '६', '७', '८', '९']
+    return num.toString().replace(/\d/g, (digit) => nepaliDigits[parseInt(digit)] || digit)
+  }
+
+  const filteredEntries = useMemo(() => {
+    return milkEntries || []
+  }, [milkEntries])
+
+  const selectedMonth = filters.monthid ? months?.find(m => m._id === filters.monthid) : null
+
+  if (loading && (!milkEntries || milkEntries.length === 0)) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-lg text-gray-600">Loading milk management data...</div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-lg text-red-600">Error: {error}</div>
+      </div>
+    )
   }
 
   return (
-    <div className="space-y-6 p-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-green-800">Milk Management</h1>
-          <p className="text-gray-600 mt-1">Manage daily milk collection and track totals</p>
-        </div>
-        
-        <Dialog open={isAddMilkOpen} onOpenChange={setIsAddMilkOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-green-600 hover:bg-green-700">
-              <Plus className="w-4 h-4 mr-2" />
-              Add Milk Entry
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle className="text-green-800">Add New Milk Entry</DialogTitle>
-              <DialogDescription>
-                Record today's milk collection for a user
-              </DialogDescription>
-            </DialogHeader>
+    <div className="container mx-auto px-2 sm:px-4 pb-4 space-y-3 sm:space-y-4">
+      {/* Navbar-style header */}
+      <div className="relative  bg-white top-0 z-10 p-2 sm:p-0">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 py-2 sm:py-3">
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-bold text-gray-900">Milk Management</h1>
+            {selectedMonth && (
+              <div className="text-xs sm:text-sm font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded-full flex items-center">
+                <Calendar className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                {selectedMonth.month} {selectedMonth.year}
+              </div>
+            )}
+          </div>
+          
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-2 w-full sm:w-auto">
+            <div className="w-full sm:w-auto">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                {/* User Filter */}
+                <Select value={filters.userid || 'all'} onValueChange={(value) => handleFilterChange('userid', value === 'all' ? undefined : value)}>
+                  <SelectTrigger className="h-8 sm:h-9 text-xs sm:text-sm w-full">
+                    <SelectValue placeholder="User" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Users</SelectItem>
+                    {data?.map((user: any) => (
+                      <SelectItem key={user._id} value={user._id}>
+                        {user.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                {/* Month Filter */}
+                <Select value={filters.monthid || 'all'} onValueChange={(value) => handleFilterChange('monthid', value === 'all' ? undefined : value)}>
+                  <SelectTrigger className="h-8 sm:h-9 text-xs sm:text-sm w-full">
+                    <SelectValue placeholder="Month" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Months</SelectItem>
+                    {months?.map((month: any) => (
+                      <SelectItem key={month._id} value={month._id}>
+                        {month.month} {month.year}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                {/* Session Filter */}
+                <Select value={selectedFilter} onValueChange={(value: 'all' | 'morning' | 'night') => setSelectedFilter(value)}>
+                  <SelectTrigger className="h-8 sm:h-9 text-xs sm:text-sm w-full">
+                    <SelectValue placeholder="Session" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="morning">Morning</SelectItem>
+                    <SelectItem value="night">Night</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {/* Records per page */}
+                <Select value={String(filters.limit)} onValueChange={(value) => handleFilterChange('limit', parseInt(value))}>
+                  <SelectTrigger className="h-8 sm:h-9 text-xs sm:text-sm w-full">
+                    <SelectValue placeholder="Per page" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="5">5 rows</SelectItem>
+                    <SelectItem value="10">10 rows</SelectItem>
+                    <SelectItem value="25">25 rows</SelectItem>
+                    <SelectItem value="50">50 rows</SelectItem>
+                    <SelectItem value="100">100 rows</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
             
-            <form onSubmit={handleAddMilk} className="space-y-4">
-              <div className="grid grid-cols-1 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="user">Select User *</Label>
-                  <Select onValueChange={handleUserSelect} value={formData.userid}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Choose a user" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {users.map((user) => (
-                        <SelectItem key={user._id} value={user._id}>
-                          {user.name} - {user.email}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="todaymilk">Today's Milk (Liters) *</Label>
-                  <Input
-                    id="todaymilk"
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    value={formData.todaymilk || ''}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      todaymilk: parseFloat(e.target.value) || 0
-                    }))}
-                    placeholder="Enter milk quantity"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="todaymoney">Today's Money (₹) *</Label>
-                  <Input
-                    id="todaymoney"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={formData.todaymoney || ''}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      todaymoney: parseFloat(e.target.value) || 0
-                    }))}
-                    placeholder="Enter amount"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="todayfit">Fat Content (%)</Label>
-                  <Input
-                    id="todayfit"
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    max="100"
-                    value={formData.todayfit || ''}
-                    onChange={(e) => setFormData(prev => ({
-                      ...prev,
-                      todayfit: parseFloat(e.target.value) || 0
-                    }))}
-                    placeholder="Enter fat percentage"
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end space-x-2 pt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsAddMilkOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={saveLoading}
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  {saveLoading ? 'Saving...' : 'Save Entry'}
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
+            <div className="flex gap-2 justify-end mt-2 sm:mt-0">
+              <Button onClick={handleResetFilters} variant="outline" size="sm" className="h-8 sm:h-9 text-xs sm:text-sm">
+                <RotateCcw className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                <span className="sm:inline">Reset</span>
+              </Button>
+              
+              <Button onClick={() => setShowUserReportModal(true)} variant="default" size="sm" className="h-8 sm:h-9 text-xs sm:text-sm bg-blue-600 hover:bg-blue-700">
+                <FileText className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                <span className="sm:inline">PDF Report</span>
+              </Button>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Admin Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="border-green-200">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-green-800">Total Milk</CardTitle>
-            <Milk className="h-4 w-4 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-700">
-              {adminTotals?.reduce((sum, total) => sum + total.totalMilk, 0)?.toFixed(1) || '0.0'} L
-            </div>
-            <p className="text-xs text-gray-600">This month</p>
+      {/* Results Summary */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+        <Card className="shadow-sm border-blue-100">
+          <CardContent className="p-3 sm:p-4 flex flex-col items-center justify-center">
+            <div className="text-lg sm:text-xl font-bold text-blue-600">{formatNepaliNumber(pagination?.totalItems || 0)}</div>
+            <div className="text-xs sm:text-sm text-gray-600 mt-1">Total Records</div>
           </CardContent>
         </Card>
-
-        <Card className="border-green-200">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-green-800">Total Revenue</CardTitle>
-            <DollarSign className="h-4 w-4 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-700">
-              {formatCurrency(adminTotals?.reduce((sum, total) => sum + total.totalMoney, 0) || 0)}
+        
+        <Card className="shadow-sm border-green-100">
+          <CardContent className="p-3 sm:p-4 flex flex-col items-center justify-center">
+            <div className="text-lg sm:text-xl font-bold text-green-600">
+              {formatNepaliNumber(Math.round(filteredEntries.reduce((sum, entry) => sum + (entry.todaymilk || 0), 0) * 100) / 100)}
             </div>
-            <p className="text-xs text-gray-600">This month</p>
+            <div className="text-xs sm:text-sm text-gray-600 mt-1">Total Milk (L)</div>
           </CardContent>
         </Card>
-
-        <Card className="border-green-200">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-green-800">Active Users</CardTitle>
-            <Users className="h-4 w-4 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-700">
-              {userTotals.length}
+        
+        <Card className="shadow-sm border-purple-100">
+          <CardContent className="p-3 sm:p-4 flex flex-col items-center justify-center">
+            <div className="text-lg sm:text-xl font-bold text-purple-600">
+              {formatNepaliNumber(Math.round(filteredEntries.reduce((sum, entry) => sum + (entry.todaymoney || 0), 0) * 100) / 100)}
             </div>
-            <p className="text-xs text-gray-600">Contributing this month</p>
+            <div className="text-xs sm:text-sm text-gray-600 mt-1">Total Amount</div>
           </CardContent>
         </Card>
-
-        <Card className="border-green-200">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-green-800">Daily Entries</CardTitle>
-            <TrendingUp className="h-4 w-4 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-700">
-              {milkEntries.length}
+        
+        <Card className="shadow-sm border-orange-100">
+          <CardContent className="p-3 sm:p-4 flex flex-col items-center justify-center">
+            <div className="text-lg sm:text-xl font-bold text-orange-600">
+              {formatNepaliNumber(new Set(filteredEntries.map(entry => entry.userid)).size)}
             </div>
-            <p className="text-xs text-gray-600">Today's collections</p>
+            <div className="text-xs sm:text-sm text-gray-600 mt-1">Unique Users</div>
           </CardContent>
         </Card>
       </div>
 
-      {/* User Totals Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-green-800">User Totals - Current Month</CardTitle>
-          <CardDescription>
-            Monthly milk collection and payment summary for each user
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>User Name</TableHead>
-                <TableHead>Total Milk (L)</TableHead>
-                <TableHead>Total Money (₹)</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {userTotals.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={4} className="text-center text-gray-500">
-                    No user totals available
-                  </TableCell>
-                </TableRow>
-              ) : (
-                userTotals.map((userTotal) => (
-                  <TableRow key={userTotal._id}>
-                    <TableCell className="font-medium">{userTotal.name}</TableCell>
-                    <TableCell>
-                      <Badge variant="secondary" className="bg-green-100 text-green-800">
-                        {userTotal.totalMilk.toFixed(1)} L
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{formatCurrency(userTotal.totalMoney)}</TableCell>
-                    <TableCell>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleViewUserHistory(userTotal.userid)}
-                        className="text-green-600 border-green-200 hover:bg-green-50"
-                      >
-                        <Eye className="w-4 h-4 mr-1" />
-                        View History
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-
-      {/* Today's Milk Entries */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-green-800">Today's Milk Entries</CardTitle>
-          <CardDescription>
-            All milk collection entries for today
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="text-center py-4">Loading entries...</div>
-          ) : (
+      {/* Data Table */}
+      <Card className="shadow-sm">
+        <CardContent className="p-2 sm:p-4">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-3">
+            <div className="text-base sm:text-lg font-semibold text-gray-800 mb-1 sm:mb-0">Milk Collection Records</div>
+            <div className="text-xs sm:text-sm text-gray-500">
+              Showing {formatNepaliNumber(filteredEntries.length)} of {formatNepaliNumber(pagination?.totalItems || 0)} records
+            </div>
+          </div>
+          
+          <div className="rounded-md border overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>User</TableHead>
-                  <TableHead>Milk (L)</TableHead>
-                  <TableHead>Money (₹)</TableHead>
-                  <TableHead>Fat (%)</TableHead>
-                  <TableHead>Time</TableHead>
+                <TableRow className="bg-gray-50">
+                  <TableHead className="py-2 sm:py-3 text-xs sm:text-sm font-semibold">Date</TableHead>
+                  <TableHead className="py-2 sm:py-3 text-xs sm:text-sm font-semibold">User</TableHead>
+                  <TableHead className="py-2 sm:py-3 text-xs sm:text-sm font-semibold">Session</TableHead>
+                  <TableHead className="py-2 sm:py-3 text-xs sm:text-sm font-semibold">Milk</TableHead>
+                  <TableHead className="py-2 sm:py-3 text-xs sm:text-sm font-semibold">Fat%</TableHead>
+                  <TableHead className="py-2 sm:py-3 text-xs sm:text-sm font-semibold">Amount</TableHead>
+                  <TableHead className="py-2 sm:py-3 text-xs sm:text-sm font-semibold hidden sm:table-cell">Month</TableHead>
+                  <TableHead className="py-2 sm:py-3 text-xs sm:text-sm font-semibold w-[60px] sm:w-[80px]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {milkEntries.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center text-gray-500">
-                      No entries for today
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  milkEntries.map((entry) => (
-                    <TableRow key={entry._id}>
-                      <TableCell className="font-medium">{entry.name}</TableCell>
-                      <TableCell>
-                        <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-                          {entry.todaymilk.toFixed(1)} L
+                {filteredEntries.map((entry: any) => {
+                  const user = data?.find((u: any) => u._id === entry.userid)
+                  const month = months?.find((m: any) => m._id === entry.monthid)
+                  
+                  return (
+                    <TableRow key={entry._id} className="text-xs sm:text-sm hover:bg-gray-50">
+                      <TableCell className="py-1.5 sm:py-2.5 font-medium whitespace-nowrap">
+                        {formatDate(entry.createdAt)}
+                      </TableCell>
+                      <TableCell className="py-1.5 sm:py-2.5 max-w-[80px] sm:max-w-none truncate">
+                        {user?.name || 'Unknown'}
+                      </TableCell>
+                      <TableCell className="py-1.5 sm:py-2.5 capitalize whitespace-nowrap">
+                       {entry.session || "NA"} 
+                        </TableCell>
+                      <TableCell className="py-1.5 sm:py-2.5 text-blue-600 font-semibold whitespace-nowrap">
+                        {formatNepaliNumber(entry.todaymilk || 0)}
+                      </TableCell>
+                      <TableCell className="py-1.5 sm:py-2.5 text-orange-600 whitespace-nowrap">
+                        {formatNepaliNumber(entry.todayfit || 0)}%
+                      </TableCell>
+                      <TableCell className="py-1.5 sm:py-2.5 text-green-600 font-semibold whitespace-nowrap">
+                        Rs.{formatNepaliNumber(entry.todaymoney || 0)}
+                      </TableCell>
+                      <TableCell className="py-1.5 sm:py-2.5 hidden sm:table-cell">
+                        <Badge variant="outline" className="text-[10px] sm:text-xs py-0 sm:py-0.5 px-1.5 sm:px-2">
+                          {month?.month} {month?.year}
                         </Badge>
                       </TableCell>
-                      <TableCell>{formatCurrency(entry.todaymoney)}</TableCell>
-                      <TableCell>{entry.todayfit.toFixed(1)}%</TableCell>
-                      <TableCell className="text-gray-600">
-                        {entry.createdAt ? formatDate(entry.createdAt) : 'Today'}
+                      <TableCell className="py-1.5 sm:py-2.5">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-6 w-6 sm:h-8 sm:w-8 p-0 text-blue-600"
+                          onClick={() => handleOpenUpdateModal(entry)}
+                        >
+                          <Pencil className="h-3 w-3 sm:h-4 sm:w-4" />
+                        </Button>
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
+                  )
+                })}
               </TableBody>
             </Table>
+          </div>
+
+          {/* Pagination */}
+          {pagination && pagination.totalPages > 1 && (
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mt-4 gap-2">
+              <div className="text-xs sm:text-sm text-gray-600 order-2 sm:order-1">
+                Page {formatNepaliNumber(pagination.currentPage)} of {formatNepaliNumber(pagination.totalPages)}
+                <span className="hidden sm:inline">{' • '} {formatNepaliNumber(pagination.totalItems)} total items</span>
+              </div>
+              
+              <div className="flex items-center justify-center sm:justify-end space-x-1 sm:space-x-2 order-1 sm:order-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(1)}
+                  disabled={pagination.currentPage <= 1}
+                  className="h-7 w-7 sm:h-8 sm:w-8 p-0"
+                >
+                  <ChevronsLeft className="h-3 w-3 sm:h-4 sm:w-4" />
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(pagination.currentPage - 1)}
+                  disabled={pagination.currentPage <= 1}
+                  className="h-7 w-7 sm:h-8 sm:w-8 p-0"
+                >
+                  <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4" />
+                </Button>
+                
+                {/* Page Numbers */}
+                {pagination.totalPages && Array.from({ length: Math.min(3, pagination.totalPages) }, (_, i) => {
+                  let pageNum: number;
+                  if (pagination.totalPages <= 3) {
+                    pageNum = i + 1;
+                  } else if (pagination.currentPage <= 2) {
+                    pageNum = i + 1;
+                  } else if (pagination.currentPage >= pagination.totalPages - 1) {
+                    pageNum = pagination.totalPages - 2 + i;
+                  } else {
+                    pageNum = pagination.currentPage - 1 + i;
+                  }
+                  
+                  return (
+                    <Button
+                      key={pageNum}
+                      variant={pagination.currentPage === pageNum ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => handlePageChange(pageNum)}
+                      className="h-7 sm:h-8 min-w-[28px] sm:min-w-[36px] text-xs sm:text-sm"
+                    >
+                      {pageNum}
+                    </Button>
+                  );
+                })}
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(pagination.currentPage + 1)}
+                  disabled={pagination.currentPage >= pagination.totalPages}
+                  className="h-7 w-7 sm:h-8 sm:w-8 p-0"
+                >
+                  <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(pagination.totalPages)}
+                  disabled={pagination.currentPage >= pagination.totalPages}
+                  className="h-7 w-7 sm:h-8 sm:w-8 p-0"
+                >
+                  <ChevronsRight className="h-3 w-3 sm:h-4 sm:w-4" />
+                </Button>
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>
 
-      {/* User History Dialog */}
-      <Dialog open={isUserHistoryOpen} onOpenChange={setIsUserHistoryOpen}>
-        <DialogContent className="sm:max-w-4xl">
+      {/* User PDF Modal */}
+      {data && months && (
+        <UserPDFModal
+          isOpen={showUserReportModal}
+          onClose={() => setShowUserReportModal(false)}
+          users={data || []}
+          months={months || []}
+        />
+      )}
+      
+      {/* Update Milk Entry Modal */}
+      <Dialog open={updateModalOpen} onOpenChange={setUpdateModalOpen}>
+        <DialogContent className="sm:max-w-[425px] max-w-[95vw] rounded-lg">
           <DialogHeader>
-            <DialogTitle className="text-green-800">User Milk History</DialogTitle>
-            <DialogDescription>
-              Complete milk collection history for selected user
-            </DialogDescription>
+            <DialogTitle className="text-lg">Update Milk Entry</DialogTitle>
           </DialogHeader>
           
-          {userHistoryLoading ? (
-            <div className="text-center py-8">Loading user history...</div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Milk (L)</TableHead>
-                  <TableHead>Money (₹)</TableHead>
-                  <TableHead>Fat (%)</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {userHistory.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={4} className="text-center text-gray-500">
-                      No history available
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  userHistory.map((entry) => (
-                    <TableRow key={entry._id}>
-                      <TableCell>{entry.createdAt ? formatDate(entry.createdAt) : 'Unknown'}</TableCell>
-                      <TableCell>
-                        <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-                          {entry.todaymilk.toFixed(1)} L
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{formatCurrency(entry.todaymoney)}</TableCell>
-                      <TableCell>{entry.todayfit.toFixed(1)}%</TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          )}
+          <div className="grid gap-4 py-2 sm:py-4">
+            {selectedEntry && (
+              <>
+                <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-2">
+                  <div>
+                    <p className="text-xs sm:text-sm font-medium text-gray-500">User</p>
+                    <p className="text-sm sm:text-base font-medium">{data?.find((u: any) => u._id === selectedEntry.userid)?.name}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs sm:text-sm font-medium text-gray-500">Date</p>
+                    <p className="text-sm sm:text-base font-medium">{formatDate(selectedEntry.createdAt)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs sm:text-sm font-medium text-gray-500">Session</p>
+                    <p className="text-sm sm:text-base font-medium">{selectedEntry.session === 'morning' ? 'Morning' : 'Night'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs sm:text-sm font-medium text-gray-500">Month</p>
+                    <p className="text-sm sm:text-base font-medium">
+                      {months?.find((m: any) => m._id === selectedEntry.monthid)?.month} 
+                      {' '} 
+                      {months?.find((m: any) => m._id === selectedEntry.monthid)?.year}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-1 sm:space-y-2">
+                  <Label htmlFor="milk" className="text-xs sm:text-sm">Milk Quantity (Liters)</Label>
+                  <Input
+                    id="milk"
+                    type="number"
+                    step="0.01"
+                    value={updateData.todaymilk}
+                    onChange={(e) => handleUpdateInputChange('todaymilk', parseFloat(e.target.value))}
+                    className="text-sm sm:text-base h-8 sm:h-10"
+                  />
+                </div>
+
+                <div className="space-y-1 sm:space-y-2">
+                  <Label htmlFor="fat" className="text-xs sm:text-sm">Fat Percentage</Label>
+                  <Input
+                    id="fat"
+                    type="number"
+                    step="0.1"
+                    value={updateData.todayfit}
+                    onChange={(e) => handleUpdateInputChange('todayfit', parseFloat(e.target.value))}
+                    className="text-sm sm:text-base h-8 sm:h-10"
+                  />
+                </div>
+
+                <div className="space-y-1 sm:space-y-2">
+                  <Label htmlFor="money" className="text-xs sm:text-sm">Amount (Rs.)</Label>
+                  <Input
+                    id="money"
+                    type="number"
+                    value={updateData.todaymoney}
+                    onChange={(e) => handleUpdateInputChange('todaymoney', parseFloat(e.target.value))}
+                    className="text-sm sm:text-base h-8 sm:h-10"
+                  />
+                  <p className="text-[10px] sm:text-xs text-gray-500">Automatically calculated based on milk and fat</p>
+                </div>
+              </>
+            )}
+          </div>
+          
+          <DialogFooter className="sm:justify-end gap-2 mt-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setUpdateModalOpen(false)}
+              className="text-xs sm:text-sm h-8 sm:h-9"
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleUpdateMilkEntry} 
+              disabled={updateLoading}
+              className="text-xs sm:text-sm h-8 sm:h-9"
+            >
+              {updateLoading ? (
+                <>
+                  <div className="animate-spin mr-2 h-3 w-3 sm:h-4 sm:w-4 border-2 border-current border-t-transparent rounded-full"></div>
+                  Updating...
+                </>
+              ) : (
+                'Update Entry'
+              )}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

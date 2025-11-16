@@ -1,365 +1,437 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useMemo } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { RootState, AppDispatch } from '../../../store/store'
-import {
-  getDailyUserHistory,
-  getUserMonthly,
-  clearError
-} from '../../../store/slices/milkSlicer'
-import { getAllMonths } from '../../../store/slices/monthslicer'
-import { getdata } from '../../../store/slices/userSlicer'
+import { getAllMilk } from '../../../store/slices/milkSlicer'
+import { getAllMonths } from "../../../store/slices/monthslicer"
+import { getdata } from "../../../store/slices/userSlicer"
+import { UserPDFModal } from '../admin/components/UserPDFModal'
+import { useAuth } from '../../../hooks/useAuth'
+import {Header} from '../../common/Header'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../components/ui/card"
 import { Button } from "../../../components/ui/button"
 import { Badge } from "../../../components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/ui/select"
-import { toast } from "sonner"
-import { Calendar, Milk, DollarSign, TrendingUp, History } from 'lucide-react'
+import { Label } from "../../../components/ui/label"
+import { Calendar, Download, FileText, RotateCcw, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react"
+import { useLocation } from 'react-router-dom'
+interface FilterParams {
+  userid?: string
+  monthid?: string
+  session?: 'morning' | 'night'
+  page?: number
+  limit?: number
+}
+
 
 const UserDashboard: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>()
-  const { 
-    userHistory, 
-    userTotals,
-    userHistoryLoading,
-    error 
-  } = useSelector((state: RootState) => state.milk)
+  const { milkEntries, loading, error, pagination } = useSelector((state: RootState) => state.milk)
+  const { data } = useSelector((state: RootState) => state.user)
   const { months } = useSelector((state: RootState) => state.months)
-  const { data: users } = useSelector((state: RootState) => state.user)
+  const { user } = useAuth() // Get authenticated user from useAuth hook
+  const location = useLocation()
+  // get current path from react-router
+  const currentPath = location.pathname // e.g. "/dashboard/user"
+  const currentFullPath = location.pathname + location.search + location.hash // includes query and hash
 
-  // For demo purposes, use the first user as current user
-  const currentUser = users?.[0] || null
-
-  const [selectedMonthId, setSelectedMonthId] = useState('')
-
+  // optional: keep in state to react to changes
+  const [currentRoute, setCurrentRoute] = useState(location.pathname)
   useEffect(() => {
-    dispatch(getAllMonths())
-    dispatch(getdata())
-    // Get user history automatically for authenticated user
-    dispatch(getDailyUserHistory())
-  }, [dispatch])
+    setCurrentRoute(location.pathname)
+  }, [location.pathname])
+  console.log('Current full path:', currentFullPath)
 
+  // example: log when path changes
   useEffect(() => {
-    if (error) {
-      toast.error(error)
-      dispatch(clearError())
+    console.log('Current path:', currentPath)
+  }, [currentPath])
+  // Filter states
+  const [filters, setFilters] = useState<FilterParams>(
+    user ? {
+      userid: user._id, // Set the authenticated user's ID by default
+      page: 1,
+      limit: 10
+    } : {
+      page: 1, 
+      limit: 10
     }
-  }, [error, dispatch])
+  )
+  const [selectedFilter, setSelectedFilter] = useState<'all' | 'morning' | 'night'>('all')
+  const [showUserReportModal, setShowUserReportModal] = useState(false)
 
-  const handleMonthChange = (monthId: string) => {
-    setSelectedMonthId(monthId)
-    // Note: getUserMonthly is auth-based and gets all months for current user
-    dispatch(getUserMonthly())
+  useEffect(() => {
+    if(!months || months.length === 0)
+      dispatch(getAllMonths())
+  }, [dispatch, months])
+
+  useEffect(() => {
+    if(!data || data.length === 0)
+      dispatch(getdata())
+  }, [dispatch, data])
+
+  // Fetch milk data with filters
+  const fetchMilkData = () => {
+    const params: any = { ...filters }
+    if (selectedFilter !== 'all') {
+      params.session = selectedFilter
+    }
+    dispatch(getAllMilk(params))
   }
 
-  const getCurrentMonthTotal = () => {
-    const currentMonth = months.find(month => {
-      const now = new Date()
-      const monthDate = new Date(month.createdAt || '')
-      return monthDate.getMonth() === now.getMonth() && 
-             monthDate.getFullYear() === now.getFullYear()
+  useEffect(() => {
+    fetchMilkData()
+  }, [filters, selectedFilter])
+
+  // Handle filter changes
+  const handleFilterChange = (key: keyof FilterParams, value: any) => {
+    // For UserDashboard, don't allow changing the userid - it should always be the logged-in user
+    if (key === 'userid' && user) {
+      return
+    }
+    
+    setFilters(prev => ({
+      ...prev,
+      [key]: value,
+      page: 1 // Reset to first page when filters change
+    }))
+  }
+
+  // Handle pagination
+  const handlePageChange = (page: number) => {
+    setFilters(prev => ({ ...prev, page }))
+  }
+
+  // Reset all filters except userid
+  const handleResetFilters = () => {
+    setFilters({
+      userid: user?._id, // Keep the authenticated user's ID
+      page: 1,
+      limit: 10
     })
-
-    if (currentMonth) {
-      return userTotals.find(total => 
-        total.userid === currentUser?._id && 
-        total.monthid === currentMonth._id
-      )
-    }
-    return null
+    setSelectedFilter('all')
   }
 
-  const getSelectedMonthTotal = () => {
-    if (!selectedMonthId) return null
-    return userTotals.find(total => 
-      total.userid === currentUser?._id && 
-      total.monthid === selectedMonthId
-    )
+  // Export to CSV
+  const handleExportCSV = () => {
+    const params = new URLSearchParams()
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== '') {
+        params.append(key, String(value))
+      }
+    })
+    if (selectedFilter !== 'all') {
+      params.append('session', selectedFilter)
+    }
+    params.append('export', 'csv')
+    
+    window.open(`${process.env.VITE_API_BASE_URL}/milk/allmilk?${params.toString()}`, '_blank')
   }
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    })
+    return new Date(dateString).toLocaleDateString('en-GB')
   }
 
-  const formatCurrency = (amount: number) => {
-    return `₹${amount.toFixed(2)}`
+  // Fixed formatNepaliNumber function to handle non-numeric inputs safely
+  const formatNepaliNumber = (num: number | null | undefined): string => {
+    if (num === null || num === undefined) return '०'
+    
+    const nepaliDigits = ['०', '१', '२', '३', '४', '५', '६', '७', '८', '९']
+    return num.toString().replace(/\d/g, (digit) => nepaliDigits[parseInt(digit)] || digit)
   }
 
-  const currentMonthTotal = getCurrentMonthTotal()
-  const selectedMonthTotal = getSelectedMonthTotal()
+  const filteredEntries = useMemo(() => {
+    return milkEntries || []
+  }, [milkEntries])
+
+  const selectedMonth = filters.monthid ? months?.find(m => m._id === filters.monthid) : null
+
+  if (loading && (!milkEntries || milkEntries.length === 0)) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-lg text-gray-600">Loading milk management data...</div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-lg text-red-600">Error: {error}</div>
+      </div>
+    )
+  }
 
   return (
-    <div className="space-y-6 p-6">
-      {/* Header */}
+    <>
+    { currentFullPath ==="/dashboard" && <Header/> }
+    <div className="container mx-auto p-6 space-y-6">
+      
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-green-800">My Milk Dashboard</h1>
-          <p className="text-gray-600 mt-1">
-            Welcome back, {currentUser?.name || 'User'}! Track your milk contributions and earnings.
-          </p>
+          <h1 className="text-3xl font-bold text-gray-900">My Milk Collection</h1>
+          <p className="text-gray-600">View and track your milk collection records</p>
+          {user && (
+            <p className="text-blue-600 font-medium mt-1">Name: {user.name}</p>
+          )}
+        </div>
+        <div className="flex gap-2">
+         
+          <Button onClick={() => setShowUserReportModal(true)} variant="outline" className="text-blue-600 hover:text-blue-700">
+            <FileText className="w-4 h-4 mr-2" />
+            My PDF Reports
+          </Button>
         </div>
       </div>
 
-      {/* Current Month Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="border-green-200">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-green-800">This Month's Milk</CardTitle>
-            <Milk className="h-4 w-4 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-700">
-              {currentMonthTotal?.totalMilk?.toFixed(1) || '0.0'} L
-            </div>
-            <p className="text-xs text-gray-600">Total contributed</p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-green-200">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-green-800">This Month's Earnings</CardTitle>
-            <DollarSign className="h-4 w-4 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-700">
-              {formatCurrency(currentMonthTotal?.totalMoney || 0)}
-            </div>
-            <p className="text-xs text-gray-600">Total earned</p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-green-200">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-green-800">Daily Average</CardTitle>
-            <TrendingUp className="h-4 w-4 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-700">
-              {currentMonthTotal ? 
-                (currentMonthTotal.totalMilk / new Date().getDate()).toFixed(1) : 
-                '0.0'
-              } L/day
-            </div>
-            <p className="text-xs text-gray-600">This month's average</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Month Selection for Historical Data */}
+      {/* Filters Card */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-green-800 flex items-center gap-2">
-            <Calendar className="w-5 h-5" />
-            Historical Monthly Data
-          </CardTitle>
-          <CardDescription>
-            Select a month to view your milk contribution summary
-          </CardDescription>
+          <CardTitle className="text-xl text-blue-700">Filters</CardTitle>
+          <CardDescription>Filter your milk records by month and session</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            <div className="flex items-center space-x-4">
-              <Select onValueChange={handleMonthChange} value={selectedMonthId}>
-                <SelectTrigger className="w-64">
-                  <SelectValue placeholder="Select a month" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+            {/* Month Filter */}
+            <div className="space-y-2">
+              <Label>Month</Label>
+              <Select value={filters.monthid || 'all'} onValueChange={(value) => handleFilterChange('monthid', value === 'all' ? undefined : value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select month" />
                 </SelectTrigger>
                 <SelectContent>
-                  {months.map((month) => (
+                  <SelectItem value="all">All Months</SelectItem>
+                  {months?.map((month: any) => (
                     <SelectItem key={month._id} value={month._id}>
-                      {month.month} ({month.year})
+                      {month.month} {month.year}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
 
-            {selectedMonthTotal && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                <Card className="border-blue-200">
-                  <CardContent className="pt-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium text-blue-800">Total Milk</p>
-                        <p className="text-2xl font-bold text-blue-700">
-                          {selectedMonthTotal.totalMilk.toFixed(1)} L
-                        </p>
-                      </div>
-                      <Milk className="h-8 w-8 text-blue-600" />
-                    </div>
-                  </CardContent>
-                </Card>
+            {/* Session Filter */}
+            <div className="space-y-2">
+              <Label>Session</Label>
+              <Select value={selectedFilter} onValueChange={(value: 'all' | 'morning' | 'night') => setSelectedFilter(value)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Sessions</SelectItem>
+                  <SelectItem value="morning">Morning</SelectItem>
+                  <SelectItem value="night">Night</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-                <Card className="border-blue-200">
-                  <CardContent className="pt-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium text-blue-800">Total Earnings</p>
-                        <p className="text-2xl font-bold text-blue-700">
-                          {formatCurrency(selectedMonthTotal.totalMoney)}
-                        </p>
-                      </div>
-                      <DollarSign className="h-8 w-8 text-blue-600" />
-                    </div>
-                  </CardContent>
-                </Card>
+            {/* Records per page */}
+            <div className="space-y-2">
+              <Label>Records per page</Label>
+              <Select value={String(filters.limit)} onValueChange={(value) => handleFilterChange('limit', parseInt(value))}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="5">5</SelectItem>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="25">25</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                  <SelectItem value="100">100</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="flex justify-between items-center mt-4">
+            {selectedMonth && (
+              <div className="text-sm text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
+                <Calendar className="w-4 h-4 inline mr-1" />
+                {selectedMonth.month} {selectedMonth.year}
               </div>
             )}
+            <Button onClick={handleResetFilters} variant="outline" size="sm">
+              <RotateCcw className="w-4 h-4 mr-1" />
+              Reset Filters
+            </Button>
           </div>
         </CardContent>
       </Card>
 
-      {/* Daily History */}
+      {/* Results Summary */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-blue-600">{formatNepaliNumber(pagination?.totalItems || 0)}</div>
+              <div className="text-sm text-gray-600">Total Records</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-green-600">
+                {formatNepaliNumber(
+                  Math.round(filteredEntries.reduce((sum, entry) => sum + (entry.todaymilk || 0), 0) * 100) / 100
+                )}
+              </div>
+              <div className="text-sm text-gray-600">Total Milk (Liters)</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-purple-600">
+                {formatNepaliNumber(
+                  Math.round(filteredEntries.reduce((sum, entry) => sum + (entry.todaymoney || 0), 0) * 100) / 100
+                )}
+              </div>
+              <div className="text-sm text-gray-600">Total Amount (Rs.)</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Data Table */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-green-800 flex items-center gap-2">
-            <History className="w-5 h-5" />
-            My Daily Milk History
-          </CardTitle>
+          <CardTitle>My Milk Collection Records</CardTitle>
           <CardDescription>
-            Complete record of your daily milk contributions
+            Showing {formatNepaliNumber(filteredEntries.length)} of {formatNepaliNumber(pagination?.totalItems || 0)} records
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {userHistoryLoading ? (
-            <div className="text-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div>
-              <p className="mt-2 text-gray-600">Loading your history...</p>
-            </div>
-          ) : (
+          <div className="rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Date</TableHead>
-                  <TableHead>Milk Quantity</TableHead>
-                  <TableHead>Amount Earned</TableHead>
-                  <TableHead>Fat Content</TableHead>
-                  <TableHead>Rate per Liter</TableHead>
+                  <TableHead>Session</TableHead>
+                  <TableHead>Milk (L)</TableHead>
+                  <TableHead>Fat %</TableHead>
+                  <TableHead>Amount (Rs.)</TableHead>
+                  <TableHead>Month</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {userHistory.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center text-gray-500 py-8">
-                      <Milk className="w-12 h-12 mx-auto text-gray-300 mb-2" />
-                      <p>No milk history available</p>
-                      <p className="text-sm">Start contributing milk to see your history here!</p>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  [...userHistory]
-                    .sort((a, b) => new Date(b.createdAt || '').getTime() - new Date(a.createdAt || '').getTime())
-                    .map((entry) => (
+                {filteredEntries.map((entry: any) => {
+                  const month = months?.find((m: any) => m._id === entry.monthid)
+                  
+                  return (
                     <TableRow key={entry._id}>
                       <TableCell className="font-medium">
-                        {entry.createdAt ? formatDate(entry.createdAt) : 'Unknown'}
+                        {formatDate(entry.createdAt)}
                       </TableCell>
                       <TableCell>
-                        <Badge variant="secondary" className="bg-green-100 text-green-800">
-                          {entry.todaymilk.toFixed(1)} L
+                        <Badge variant={entry.session === 'morning' ? 'default' : 'secondary'}>
+                          {entry.session === 'morning' ? 'Morning' : 'Night'}
                         </Badge>
                       </TableCell>
-                      <TableCell className="font-medium text-green-700">
-                        {formatCurrency(entry.todaymoney)}
+                      <TableCell className="text-blue-600 font-semibold">
+                        {formatNepaliNumber(entry.todaymilk || 0)}
+                      </TableCell>
+                      <TableCell className="text-orange-600">
+                        {formatNepaliNumber(entry.todayfit || 0)}%
+                      </TableCell>
+                      <TableCell className="text-green-600 font-semibold">
+                        Rs. {formatNepaliNumber(entry.todaymoney || 0)}
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline" className="border-yellow-300 text-yellow-700">
-                          {entry.todayfit.toFixed(1)}%
+                        <Badge variant="outline">
+                          {month?.month} {month?.year}
                         </Badge>
-                      </TableCell>
-                      <TableCell className="text-gray-600">
-                        {entry.todaymilk > 0 ? 
-                          formatCurrency(entry.todaymoney / entry.todaymilk) + '/L' : 
-                          'N/A'
-                        }
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
+                  )
+                })}
               </TableBody>
             </Table>
+          </div>
+
+          {/* Pagination */}
+          {pagination && pagination.totalPages > 1 && (
+            <div className="flex items-center justify-between mt-4">
+              <div className="text-sm text-gray-600">
+                Page {formatNepaliNumber(pagination.currentPage)} of {formatNepaliNumber(pagination.totalPages)}
+                {' • '}
+                {formatNepaliNumber(pagination.totalItems)} total items
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(1)}
+                  disabled={pagination.currentPage <= 1}
+                >
+                  <ChevronsLeft className="h-4 w-4" />
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(pagination.currentPage - 1)}
+                  disabled={pagination.currentPage <= 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                
+                {/* Page Numbers */}
+                {pagination.totalPages && Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                  let pageNum: number;
+                  if (pagination.totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (pagination.currentPage <= 3) {
+                    pageNum = i + 1;
+                  } else if (pagination.currentPage >= pagination.totalPages - 2) {
+                    pageNum = pagination.totalPages - 4 + i;
+                  } else {
+                    pageNum = pagination.currentPage - 2 + i;
+                  }
+                  
+                  return (
+                    <Button
+                      key={pageNum}
+                      variant={pagination.currentPage === pageNum ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => handlePageChange(pageNum)}
+                      className="w-8 h-8 p-0"
+                    >
+                      {pageNum}
+                    </Button>
+                  );
+                })}
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(pagination.currentPage + 1)}
+                  disabled={pagination.currentPage >= pagination.totalPages}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(pagination.totalPages)}
+                  disabled={pagination.currentPage >= pagination.totalPages}
+                >
+                  <ChevronsRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card className="border-purple-200">
-          <CardHeader>
-            <CardTitle className="text-purple-800">Performance Summary</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Total Days Contributed:</span>
-                <span className="font-semibold">{userHistory.length} days</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Average per Day:</span>
-                <span className="font-semibold">
-                  {userHistory.length > 0 ? 
-                    (userHistory.reduce((sum, entry) => sum + entry.todaymilk, 0) / userHistory.length).toFixed(1) : 
-                    '0.0'
-                  } L
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Best Single Day:</span>
-                <span className="font-semibold text-green-600">
-                  {userHistory.length > 0 ? 
-                    Math.max(...userHistory.map(entry => entry.todaymilk)).toFixed(1) : 
-                    '0.0'
-                  } L
-                </span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-indigo-200">
-          <CardHeader>
-            <CardTitle className="text-indigo-800">Quality Metrics</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Average Fat Content:</span>
-                <span className="font-semibold">
-                  {userHistory.length > 0 ? 
-                    (userHistory.reduce((sum, entry) => sum + entry.todayfit, 0) / userHistory.length).toFixed(1) : 
-                    '0.0'
-                  }%
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Highest Fat Content:</span>
-                <span className="font-semibold text-yellow-600">
-                  {userHistory.length > 0 ? 
-                    Math.max(...userHistory.map(entry => entry.todayfit)).toFixed(1) : 
-                    '0.0'
-                  }%
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Average Rate:</span>
-                <span className="font-semibold text-green-600">
-                  {userHistory.length > 0 ? 
-                    formatCurrency(
-                      userHistory.reduce((sum, entry) => sum + (entry.todaymoney / entry.todaymilk || 0), 0) / 
-                      userHistory.filter(entry => entry.todaymilk > 0).length || 1
-                    ) + '/L' : 
-                    '₹0.00/L'
-                  }
-                </span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      {/* User PDF Modal */}
+      {data && months && user && (
+        <UserPDFModal
+          isOpen={showUserReportModal}
+          onClose={() => setShowUserReportModal(false)}
+          users={[data.find((u: any) => u._id === user._id)].filter(Boolean)}
+          months={months || []}
+          // defaultUserId={user._id}
+        />
+      )}
     </div>
+    </>
   )
 }
 

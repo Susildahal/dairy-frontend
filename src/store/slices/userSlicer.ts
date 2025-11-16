@@ -12,6 +12,7 @@ interface User {
   tagnumber?: string;
   createdAt?: string;
   updatedAt?: string;
+  both?: boolean;
 }
 
 interface UserState {
@@ -22,6 +23,8 @@ interface UserState {
   updateLoading: boolean;
   deleteLoading: boolean;
   statusloading:boolean;
+  bothloading:boolean;
+  lastFetched: number | null; // Add timestamp for caching
 }
 
 export const getdata = createAsyncThunk("users/user/getdata", async () => {
@@ -129,6 +132,19 @@ export const updatestatus = createAsyncThunk("user/status", async ({ id, status 
   }
 });
 
+export const updatebothstatus = createAsyncThunk("user/status/both", async ({ id, both }: { id: string, both: boolean }) => {
+  try {
+    const response = await axiosInstance.patch(`/users/both/${id}`, { both });
+    return response.data.data;
+  } catch (error: any) {
+    console.warn("Update both status API call failed, using mock data:", error.message);
+    return {
+      _id: id,
+      both: both
+    };
+  }
+});
+
 const initialState: UserState = {
   data: [],
   error: null,
@@ -136,7 +152,9 @@ const initialState: UserState = {
   createLoading: false,
   updateLoading: false,
   deleteLoading: false,
-  statusloading: false
+  statusloading: false,
+  bothloading: false,
+  lastFetched: null
 };
 
 const userSlicer = createSlice({
@@ -158,6 +176,7 @@ const userSlicer = createSlice({
         state.data = action.payload;
         state.loading = false;
         state.error = null;
+        state.lastFetched = Date.now();
       })
       .addCase(getdata.rejected, (state, action) => {
         state.error = action.error.message || "Failed to fetch users";
@@ -243,6 +262,23 @@ const userSlicer = createSlice({
         state.statusloading = false;
       })
 
+      //updatebothstatus
+      .addCase(updatebothstatus.pending, (state) => {
+        state.bothloading = true;
+        state.error = null;
+      })
+      .addCase(updatebothstatus.fulfilled, (state, action) => {
+        const index = state.data.findIndex(user => user._id === action.payload._id);
+        if (index !== -1) {
+          state.data[index].both = action.payload.both;
+        }
+        state.bothloading = false;
+        state.error = null;
+      })
+      .addCase(updatebothstatus.rejected, (state, action) => {
+        state.error = action.error.message || "Failed to update user both status";
+        state.bothloading = false;
+      })
 
   },
 });

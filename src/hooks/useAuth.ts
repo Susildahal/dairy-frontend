@@ -1,4 +1,7 @@
 import { useState, useEffect } from 'react'
+import { useSelector, useDispatch } from 'react-redux'
+import { RootState, AppDispatch } from '../store/store'
+import { getmee, clearMeeData } from '../store/slices/meeSlicer'
 import axiosInstance from '../utils/axiosInstance'
 
 export interface AuthUser {
@@ -10,36 +13,51 @@ export interface AuthUser {
 }
 
 export const useAuth = () => {
-  const [user, setUser] = useState<AuthUser | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const dispatch = useDispatch<AppDispatch>()
+  const { data: user, loading: isLoading } = useSelector((state: RootState) => state.mee)
+  
+  // Calculate authentication status directly from Redux state and localStorage
+  const isAuthenticated = (() => {
+    const flag = localStorage.getItem('flag')
+    return flag === 'true' && !!user
+  })()
 
   useEffect(() => {
-    checkAuthStatus()
-  }, [])
+    // Check auth status on mount
+    const initializeAuth = async () => {
+      const flag = localStorage.getItem('flag')
+      
+      if (flag === 'true' && !user) {
+        try {
+          await dispatch(getmee())
+        } catch (error) {
+          console.error('Failed to restore user session:', error)
+          // Clear invalid session
+          localStorage.removeItem('flag')
+          dispatch(clearMeeData())
+        }
+      }
+    }
+    
+    initializeAuth()
+  }, [dispatch, user])
 
   const checkAuthStatus = async () => {
     try {
       const flag = localStorage.getItem('flag')
       
       if (flag !== 'true') {
-        setIsAuthenticated(false)
-        setUser(null)
-        setIsLoading(false)
+        dispatch(clearMeeData())
         return
       }
 
-      // Get user data from me API
-      const response = await axiosInstance.get('/users/me')
-      const userData = response.data.data
-
-      setUser(userData)
-      setIsAuthenticated(true)
+      // Only fetch if we don't have user data
+      if (!user) {
+        dispatch(getmee())
+      }
     } catch (error) {
       console.error('Auth check failed:', error)
       logout()
-    } finally {
-      setIsLoading(false)
     }
   }
 
@@ -47,14 +65,14 @@ export const useAuth = () => {
     try {
       localStorage.setItem('flag', 'true')
       
-      // Get user data from me API after login
-      const response = await axiosInstance.get('/users/me')
-      const userData = response.data.data
+      // Fetch user data through Redux
+      const resultAction = await dispatch(getmee())
       
-      setUser(userData)
-      setIsAuthenticated(true)
-      
-      return userData
+      if (getmee.fulfilled.match(resultAction)) {
+        return resultAction.payload
+      } else {
+        throw new Error('Failed to get user data')
+      }
     } catch (error) {
       console.error('Login failed:', error)
       throw new Error('Failed to get user data')
@@ -63,12 +81,15 @@ export const useAuth = () => {
 
   const logout = () => {
     localStorage.removeItem('flag')
-    setUser(null)
-    setIsAuthenticated(false)
+    dispatch(clearMeeData())
   }
 
   const isAdmin = (): boolean => {
     return user?.role === 'admin'
+  }
+
+  const isSuperAdmin = (): boolean => {
+    return user?.role === 'superadmin'
   }
 
   const isUser = (): boolean => {
@@ -82,6 +103,7 @@ export const useAuth = () => {
     login,
     logout,
     isAdmin,
+    isSuperAdmin,
     isUser,
     checkAuthStatus
   }

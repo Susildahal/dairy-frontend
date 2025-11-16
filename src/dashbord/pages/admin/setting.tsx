@@ -36,8 +36,11 @@ const Settings = () => {
   const { data, loading, error } = useSelector((state: RootState) => state.siteSettings);
  console.log(data)
   useEffect(() => {
-    dispatch(getsettingdata());
-  }, [dispatch]);
+    // Only fetch settings if not already loaded
+    if (!data && !loading) {
+      dispatch(getsettingdata());
+    }
+  }, [dispatch, data, loading]);
 
   useEffect(() => {
     if (data) {

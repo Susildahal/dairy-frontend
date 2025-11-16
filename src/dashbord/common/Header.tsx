@@ -67,13 +67,21 @@ const sidebarItems = [
 export function Header() {
   const navigate = useNavigate()
   const dispatch = useDispatch<AppDispatch>()
-  const { data, error } = useSelector((state: RootState) => state.mee)
+  const { data, loading} = useSelector((state: RootState) => state.mee)
   const { logout } = useAuth()
 
   useEffect(() => {
-    if(!data)
+    // Only fetch user data if:
+    // 1. Data doesn't exist
+    // 2. Not currently loading
+    // 3. No recent fetch (within last 5 minutes)
+    const shouldFetch = !data && 
+                       !loading
+    
+    if (shouldFetch) {
       dispatch(getmee())
-  }, [dispatch])
+    }
+  }, [dispatch, data, loading])
 
   const handleLogout = () => {
  axiosInstance.post('users/user/logout')

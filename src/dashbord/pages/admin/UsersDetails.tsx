@@ -1,7 +1,8 @@
 import React, { useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { RootState, AppDispatch } from '../../../store/store'
-import { getdata, deleteuser, updatestatus, clearError } from "../../../store/slices/userSlicer"
+import { getdata, deleteuser, updatestatus, clearError  ,updatebothstatus  } from "../../../store/slices/userSlicer"
+import { shouldFetchUserData } from '../../../utils/cacheHelper'
 import { toast } from "sonner"
 import AdminHeader from '@/dashbord/common/AdminHeader'
 import Loading from '@/dashbord/ui/Loading'
@@ -15,7 +16,6 @@ import {
   Table,
   TableBody,
   TableCell,
-
   TableHead,
   TableHeader,
   TableRow,
@@ -23,12 +23,15 @@ import {
 
 const UsersDetails = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const { data, loading, deleteLoading, statusloading, error } = useSelector((state: RootState) => state.user)
+  const { data = [], loading, deleteLoading, statusloading, error, lastFetched } = useSelector((state: RootState) => state.user)
   const navigate = useNavigate();
 
   useEffect(() => {
-    dispatch(getdata())
-  }, [dispatch])
+    // Use cache helper to determine if we should fetch
+    if (shouldFetchUserData(data, lastFetched, loading)) {
+      dispatch(getdata())
+    }
+  }, [dispatch, data.length, loading, lastFetched])
 
   useEffect(() => {
     if (error) {
@@ -54,6 +57,17 @@ const UsersDetails = () => {
       const newStatus = !currentStatus;
       await dispatch(updatestatus({ id, status: newStatus })).unwrap();
       toast.success(`User "${userName}" status updated to ${newStatus ? 'Active' : 'Inactive'}!`);
+    } catch (error) {
+      console.error('Error updating user status:', error);
+      // Error is already handled by the useEffect above
+    }
+  };
+
+   const handleBothUpdate = async (id: string, currentBoth: boolean, userName: string) => {
+    try {
+      const newBoth = !currentBoth;
+      await dispatch(updatebothstatus({ id, both: newBoth })).unwrap();
+      toast.success(`User "${userName}" both status updated to ${newBoth ? 'Active' : 'Inactive'}!`);
     } catch (error) {
       console.error('Error updating user status:', error);
       // Error is already handled by the useEffect above
@@ -96,13 +110,14 @@ const UsersDetails = () => {
                   <TableHead className="font-semibold">Tag Number</TableHead>
                   <TableHead className="font-semibold">Role</TableHead>
                   <TableHead className="font-semibold">Status</TableHead>
+                  <TableHead className="font-semibold">Is both available</TableHead>
                   <TableHead className="font-semibold text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {data.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center py-12">
+                    <TableCell colSpan={9} className="text-center py-12">
                       <div className="flex flex-col items-center gap-3">
                         <div className="p-3 bg-gray-100 dark:bg-gray-800 rounded-full">
                           <Eye className="h-8 w-8 text-gray-400" />
@@ -117,7 +132,7 @@ const UsersDetails = () => {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  data.map((user, index) => (
+                  (data as any[]).map((user: any, index: number) => (
                     <TableRow key={user._id || index} className="border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50">
                       <TableCell className="font-medium py-4">{index + 1}</TableCell>
                       <TableCell className="font-medium py-4">{user.name}</TableCell>
@@ -135,8 +150,8 @@ const UsersDetails = () => {
                       <TableCell className="py-4">
                         <div className="flex items-center gap-3">
                           <Switch
-                            checked={user.status}
-                            onCheckedChange={() => handleStatusUpdate(user._id, user.status, user.name)}
+                            checked={!!user.status}
+                            onCheckedChange={() => user._id && handleStatusUpdate(user._id, !!user.status, user.name ?? '')}
                             disabled={statusloading}
                             className="data-[state=checked]:bg-green-600"
                           />
@@ -148,12 +163,29 @@ const UsersDetails = () => {
                           </Badge>
                         </div>
                       </TableCell>
+
+                       <TableCell className="py-4">
+                        <div className="flex items-center gap-3">
+                          <Switch
+                            checked={!!user.both}
+                            onCheckedChange={() => user._id && handleBothUpdate(user._id, !!user.both, user.name ?? '')}
+                            disabled={statusloading}
+                            className="data-[state=checked]:bg-green-600"
+                          />
+                          <Badge 
+                            variant={user.both ? 'default' : 'secondary'}
+                            className={user.both ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}
+                          >
+                            {user.both  ? 'छ' : 'छैन'}
+                          </Badge>
+                        </div>
+                      </TableCell>
                       <TableCell className="text-right py-4">
                         <div className="flex items-center justify-end gap-2">
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => handleDeleteUser(user._id, user.name)}
+                            onClick={() => user._id ? handleDeleteUser(user._id, user.name ?? '') : undefined}
                             disabled={deleteLoading}
                             className="text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300 h-8 w-8 p-0"
                           >
@@ -163,7 +195,7 @@ const UsersDetails = () => {
                            <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => navigate(`/admin/users/edit/${user._id}`)}
+                            onClick={() => user._id ? navigate(`/admin/users/edit/${user._id}`) : undefined}
                             disabled={deleteLoading}
                             className="text-blue-600 border-blue-200 hover:bg-blue-50 hover:border-blue-300 h-8 w-8 p-0"
                           >

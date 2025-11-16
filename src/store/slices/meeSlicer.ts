@@ -14,8 +14,15 @@ const meeSlicer = createSlice({
     data: null,
     loading: false,
     error: null,
+    lastFetched: null, // Add timestamp to track when data was last fetched
   },
-  reducers: {},
+  reducers: {
+    clearMeeData: (state) => {
+      state.data = null;
+      state.error = null;
+      state.lastFetched = null;
+    }
+  },
   extraReducers: (builder) => {
     builder
       .addCase(getmee.pending, (state) => {
@@ -25,12 +32,19 @@ const meeSlicer = createSlice({
       .addCase(getmee.fulfilled, (state, action) => {
         state.loading = false
         state.data = action.payload
+        state.lastFetched = Date.now()
       })
       .addCase(getmee.rejected, (state, action) => {
         state.loading = false
         state.error = action.error.message
+        // Clear user data on authentication failure
+        if (action.error.message?.includes('401') || action.error.message?.includes('Unauthorized')) {
+          state.data = null
+          state.lastFetched = null
+        }
       })
   },
 })
 
+export const { clearMeeData } = meeSlicer.actions
 export default meeSlicer.reducer

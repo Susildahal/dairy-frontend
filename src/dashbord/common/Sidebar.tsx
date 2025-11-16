@@ -9,8 +9,7 @@ import {
   Settings, 
   FileText, 
   BarChart3, 
-  Mail, 
-  Calendar, 
+  Mail,  
   ChevronLeft, 
   ChevronRight, 
   Menu,
@@ -68,21 +67,8 @@ const sidebarItems = [
     icon: Settings,
     href: "/admin/settings",
   },
-  {
-    title: "User Daily Reports",
-    icon: Mail,
-    href: "/admin/user-reports",
-  },
-  // {
-  //   title: "Admin Monthly Reports",
-  //   icon: Calendar,
-  //   href: "/admin/admin-reports",
-  // },
-  //  {
-  //   title: "User Daily Reports",
-  //   icon: Calendar,
-  //   href: "/admin/user-daily",
-  // },
+
+  
 ]
 export function Sidebar({ className, onCollapsedChange }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)

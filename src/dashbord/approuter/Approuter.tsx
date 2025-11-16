@@ -24,7 +24,7 @@ const Createuser = lazy(() => import("../pages/admin/Createuser")) as unknown as
 const Settings = lazy(() => import("../pages/admin/setting"));
 const MonthManagement = lazy(() => import("../pages/admin/MonthManagement"));
 const Addmilk = lazy(() => import("../pages/admin/Addmilk"));
-const Userdaily = lazy(() => import("../pages/admin/Alldetails"));
+
 export default function AppRouter() {
     return (
         <BrowserRouter>
@@ -64,7 +64,7 @@ export default function AppRouter() {
                         <Route path="settings" element={<Settings />} />
                         <Route path="users/create" element={<Createuser />} />
                         <Route path="/admin/users/edit/:id" element={<Createuser isedit={true} />} />
-                        <Route path="user-reports" element={<Userdaily />} />
+                      
                         <Route path="add-month" element={<MonthManagement />} />
                         
                         {/* Admin can also access user dashboard */}
