@@ -165,260 +165,235 @@ const UserDashboard: React.FC = () => {
   return (
     <>
     { currentFullPath ==="/dashboard" && <Header/> }
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto p-4 space-y-4">
       
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center border-b pb-3">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">My Milk Collection</h1>
-          <p className="text-gray-600">View and track your milk collection records</p>
+          <h1 className="text-2xl font-bold">My Milk Collection</h1>
           {user && (
-            <p className="text-blue-600 font-medium mt-1">Name: {user.name}</p>
+            <p className="text-sm text-gray-600 mt-1">Name: {user.name}</p>
           )}
         </div>
-        <div className="flex gap-2">
-         
-          <Button onClick={() => setShowUserReportModal(true)} variant="outline" className="text-blue-600 hover:text-blue-700">
-            <FileText className="w-4 h-4 mr-2" />
-            My PDF Reports
+        <Button onClick={() => setShowUserReportModal(true)} variant="outline" size="sm">
+          <FileText className="w-4 h-4 mr-2" />
+          PDF Reports
+        </Button>
+      </div>
+
+      {/* Filters */}
+      <div className="bg-white p-4 rounded border">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg font-semibold">Filters</h2>
+          <Button onClick={handleResetFilters} variant="ghost" size="sm">
+            <RotateCcw className="w-4 h-4 mr-1" />
+            Reset
           </Button>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {/* Month Filter */}
+          <div className="space-y-1">
+            <Label className="text-sm">Month</Label>
+            <Select value={filters.monthid || 'all'} onValueChange={(value) => handleFilterChange('monthid', value === 'all' ? undefined : value)}>
+              <SelectTrigger className="h-9">
+                <SelectValue placeholder="Select month" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Months</SelectItem>
+                {months?.map((month: any) => (
+                  <SelectItem key={month._id} value={month._id}>
+                    {month.month} {month.year}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Session Filter */}
+          <div className="space-y-1">
+            <Label className="text-sm">Session</Label>
+            <Select value={selectedFilter} onValueChange={(value: 'all' | 'morning' | 'night') => setSelectedFilter(value)}>
+              <SelectTrigger className="h-9">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Sessions</SelectItem>
+                <SelectItem value="morning">Morning</SelectItem>
+                <SelectItem value="night">Night</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Records per page */}
+          <div className="space-y-1">
+            <Label className="text-sm">Records per page</Label>
+            <Select value={String(filters.limit)} onValueChange={(value) => handleFilterChange('limit', parseInt(value))}>
+              <SelectTrigger className="h-9">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="5">5</SelectItem>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="25">25</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+                <SelectItem value="100">100</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
 
-      {/* Filters Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-xl text-blue-700">Filters</CardTitle>
-          <CardDescription>Filter your milk records by month and session</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-
-            {/* Month Filter */}
-            <div className="space-y-2">
-              <Label>Month</Label>
-              <Select value={filters.monthid || 'all'} onValueChange={(value) => handleFilterChange('monthid', value === 'all' ? undefined : value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select month" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Months</SelectItem>
-                  {months?.map((month: any) => (
-                    <SelectItem key={month._id} value={month._id}>
-                      {month.month} {month.year}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Session Filter */}
-            <div className="space-y-2">
-              <Label>Session</Label>
-              <Select value={selectedFilter} onValueChange={(value: 'all' | 'morning' | 'night') => setSelectedFilter(value)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Sessions</SelectItem>
-                  <SelectItem value="morning">Morning</SelectItem>
-                  <SelectItem value="night">Night</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Records per page */}
-            <div className="space-y-2">
-              <Label>Records per page</Label>
-              <Select value={String(filters.limit)} onValueChange={(value) => handleFilterChange('limit', parseInt(value))}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="5">5</SelectItem>
-                  <SelectItem value="10">10</SelectItem>
-                  <SelectItem value="25">25</SelectItem>
-                  <SelectItem value="50">50</SelectItem>
-                  <SelectItem value="100">100</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="flex justify-between items-center mt-4">
-            {selectedMonth && (
-              <div className="text-sm text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
-                <Calendar className="w-4 h-4 inline mr-1" />
-                {selectedMonth.month} {selectedMonth.year}
-              </div>
+      {/* Summary */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="bg-white p-3 rounded border text-center">
+          <div className="text-xl font-bold">{formatNepaliNumber(pagination?.totalItems || 0)}</div>
+          <div className="text-xs text-gray-600">Total Records</div>
+        </div>
+        <div className="bg-white p-3 rounded border text-center">
+          <div className="text-xl font-bold text-green-600">
+            {formatNepaliNumber(
+              Math.round(filteredEntries.reduce((sum, entry) => sum + (entry.todaymilk || 0), 0) * 100) / 100
             )}
-            <Button onClick={handleResetFilters} variant="outline" size="sm">
-              <RotateCcw className="w-4 h-4 mr-1" />
-              Reset Filters
-            </Button>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Results Summary */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">{formatNepaliNumber(pagination?.totalItems || 0)}</div>
-              <div className="text-sm text-gray-600">Total Records</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">
-                {formatNepaliNumber(
-                  Math.round(filteredEntries.reduce((sum, entry) => sum + (entry.todaymilk || 0), 0) * 100) / 100
-                )}
-              </div>
-              <div className="text-sm text-gray-600">Total Milk (Liters)</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-purple-600">
-                {formatNepaliNumber(
-                  Math.round(filteredEntries.reduce((sum, entry) => sum + (entry.todaymoney || 0), 0) * 100) / 100
-                )}
-              </div>
-              <div className="text-sm text-gray-600">Total Amount (Rs.)</div>
-            </div>
+          <div className="text-xs text-gray-600">Total Milk (L)</div>
+        </div>
+        <div className="bg-white p-3 rounded border text-center">
+          <div className="text-xl font-bold text-blue-600">
+            {formatNepaliNumber(
+              Math.round(filteredEntries.reduce((sum, entry) => sum + (entry.todaymoney || 0), 0) * 100) / 100
+            )}
           </div>
-        </CardContent>
-      </Card>
+          <div className="text-xs text-gray-600">Total Amount (Rs.)</div>
+        </div>
+      </div>
 
       {/* Data Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle>My Milk Collection Records</CardTitle>
-          <CardDescription>
+      <div className="bg-white rounded border">
+        <div className="p-3 border-b">
+          <h2 className="font-semibold">Records</h2>
+          <p className="text-xs text-gray-600">
             Showing {formatNepaliNumber(filteredEntries.length)} of {formatNepaliNumber(pagination?.totalItems || 0)} records
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Session</TableHead>
-                  <TableHead>Milk (L)</TableHead>
-                  <TableHead>Fat %</TableHead>
-                  <TableHead>Amount (Rs.)</TableHead>
-                  <TableHead>Month</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredEntries.map((entry: any) => {
-                  const month = months?.find((m: any) => m._id === entry.monthid)
-                  
-                  return (
-                    <TableRow key={entry._id}>
-                      <TableCell className="font-medium">
-                        {formatDate(entry.createdAt)}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={entry.session === 'morning' ? 'default' : 'secondary'}>
-                          {entry.session === 'morning' ? 'Morning' : 'Night'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-blue-600 font-semibold">
-                        {formatNepaliNumber(entry.todaymilk || 0)}
-                      </TableCell>
-                      <TableCell className="text-orange-600">
-                        {formatNepaliNumber(entry.todayfit || 0)}%
-                      </TableCell>
-                      <TableCell className="text-green-600 font-semibold">
-                        Rs. {formatNepaliNumber(entry.todaymoney || 0)}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">
-                          {month?.month} {month?.year}
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
-                  )
-                })}
-              </TableBody>
-            </Table>
-          </div>
+          </p>
+        </div>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Date</TableHead>
+                <TableHead>Session</TableHead>
+                <TableHead>Milk (L)</TableHead>
+                <TableHead>Fat %</TableHead>
+                <TableHead>Amount (Rs.)</TableHead>
+                <TableHead>Month</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredEntries.map((entry: any) => {
+                const month = months?.find((m: any) => m._id === entry.monthid)
+                
+                return (
+                  <TableRow key={entry._id}>
+                    <TableCell className="font-medium">
+                      {formatDate(entry.createdAt)}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={entry.session === 'morning' ? 'default' : 'secondary'} className="text-xs">
+                        {entry.session === 'morning' ? 'Morning' : 'Night'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="font-semibold">
+                      {formatNepaliNumber(entry.todaymilk || 0)}
+                    </TableCell>
+                    <TableCell>
+                      {formatNepaliNumber(entry.todayfit || 0)}%
+                    </TableCell>
+                    <TableCell className="font-semibold">
+                      Rs. {formatNepaliNumber(entry.todaymoney || 0)}
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-xs">
+                        {month?.month} {month?.year}
+                      </span>
+                    </TableCell>
+                  </TableRow>
+                )
+              })}
+            </TableBody>
+          </Table>
+        </div>
 
-          {/* Pagination */}
-          {pagination && pagination.totalPages > 1 && (
-            <div className="flex items-center justify-between mt-4">
-              <div className="text-sm text-gray-600">
-                Page {formatNepaliNumber(pagination.currentPage)} of {formatNepaliNumber(pagination.totalPages)}
-                {' • '}
-                {formatNepaliNumber(pagination.totalItems)} total items
-              </div>
-              
-              <div className="flex items-center space-x-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handlePageChange(1)}
-                  disabled={pagination.currentPage <= 1}
-                >
-                  <ChevronsLeft className="h-4 w-4" />
-                </Button>
-                
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handlePageChange(pagination.currentPage - 1)}
-                  disabled={pagination.currentPage <= 1}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                
-                {/* Page Numbers */}
-                {pagination.totalPages && Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
-                  let pageNum: number;
-                  if (pagination.totalPages <= 5) {
-                    pageNum = i + 1;
-                  } else if (pagination.currentPage <= 3) {
-                    pageNum = i + 1;
-                  } else if (pagination.currentPage >= pagination.totalPages - 2) {
-                    pageNum = pagination.totalPages - 4 + i;
-                  } else {
-                    pageNum = pagination.currentPage - 2 + i;
-                  }
-                  
-                  return (
-                    <Button
-                      key={pageNum}
-                      variant={pagination.currentPage === pageNum ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => handlePageChange(pageNum)}
-                      className="w-8 h-8 p-0"
-                    >
-                      {pageNum}
-                    </Button>
-                  );
-                })}
-                
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handlePageChange(pagination.currentPage + 1)}
-                  disabled={pagination.currentPage >= pagination.totalPages}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-                
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handlePageChange(pagination.totalPages)}
-                  disabled={pagination.currentPage >= pagination.totalPages}
-                >
-                  <ChevronsRight className="h-4 w-4" />
-                </Button>
-              </div>
+        {/* Pagination */}
+        {pagination && pagination.totalPages > 1 && (
+          <div className="flex items-center justify-between p-3 border-t">
+            <div className="text-xs text-gray-600">
+              Page {formatNepaliNumber(pagination.currentPage)} of {formatNepaliNumber(pagination.totalPages)}
             </div>
-          )}
-        </CardContent>
-      </Card>
+            
+            <div className="flex items-center space-x-1">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handlePageChange(1)}
+                disabled={pagination.currentPage <= 1}
+              >
+                <ChevronsLeft className="h-3 w-3" />
+              </Button>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handlePageChange(pagination.currentPage - 1)}
+                disabled={pagination.currentPage <= 1}
+              >
+                <ChevronLeft className="h-3 w-3" />
+              </Button>
+              
+              {/* Page Numbers */}
+              {pagination.totalPages && Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                let pageNum: number;
+                if (pagination.totalPages <= 5) {
+                  pageNum = i + 1;
+                } else if (pagination.currentPage <= 3) {
+                  pageNum = i + 1;
+                } else if (pagination.currentPage >= pagination.totalPages - 2) {
+                  pageNum = pagination.totalPages - 4 + i;
+                } else {
+                  pageNum = pagination.currentPage - 2 + i;
+                }
+                
+                return (
+                  <Button
+                    key={pageNum}
+                    variant={pagination.currentPage === pageNum ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => handlePageChange(pageNum)}
+                    className="w-7 h-7 p-0 text-xs"
+                  >
+                    {pageNum}
+                  </Button>
+                );
+              })}
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handlePageChange(pagination.currentPage + 1)}
+                disabled={pagination.currentPage >= pagination.totalPages}
+              >
+                <ChevronRight className="h-3 w-3" />
+              </Button>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handlePageChange(pagination.totalPages)}
+                disabled={pagination.currentPage >= pagination.totalPages}
+              >
+                <ChevronsRight className="h-3 w-3" />
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* User PDF Modal */}
       {data && months && user && (

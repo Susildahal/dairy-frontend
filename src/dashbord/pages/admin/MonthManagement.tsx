@@ -9,7 +9,8 @@ import {
   DialogDescription, 
   DialogHeader, 
   DialogTitle, 
-  DialogTrigger 
+  DialogTrigger,
+  DialogFooter
 } from "@/components/ui/dialog"
 import {
   Select,
@@ -70,6 +71,14 @@ const MonthManagement = () => {
     status: false
   })
   const [filterYear, setFilterYear] = useState<string>('all')
+  
+  // Delete confirmation dialog state
+  const [deleteDialog, setDeleteDialog] = useState<{
+    isOpen: boolean;
+    monthId: string | null;
+    monthName: string;
+    year: string;
+  }>({ isOpen: false, monthId: null, monthName: '', year: '' });
   
   const dispatch = useDispatch<AppDispatch>()
   const { 
@@ -139,16 +148,25 @@ const MonthManagement = () => {
       console.error('Failed to activate month:', error)
     }
   }
-  const handleDelete = async (monthId: string, monthName: string, year: string) => {
-    if (window.confirm(`Are you sure you want to delete ${monthName} ${year}?`)) {
-      try {
-        await dispatch(deleteMonth(monthId)).unwrap()
-        toast.success("Month deleted successfully!")
-      } catch (error) {
-        console.error('Failed to delete month:', error)
-      }
+  const handleDelete = (monthId: string, monthName: string, year: string) => {
+    setDeleteDialog({ isOpen: true, monthId, monthName, year });
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteDialog.monthId) return;
+    
+    try {
+      await dispatch(deleteMonth(deleteDialog.monthId)).unwrap();
+      toast.success("Month deleted successfully!");
+      setDeleteDialog({ isOpen: false, monthId: null, monthName: '', year: '' });
+    } catch (error) {
+      console.error('Failed to delete month:', error);
     }
-  }
+  };
+
+  const cancelDelete = () => {
+    setDeleteDialog({ isOpen: false, monthId: null, monthName: '', year: '' });
+  };
 
   const handleFilterChange = (year: string) => {
     setFilterYear(year)
@@ -448,6 +466,51 @@ const MonthManagement = () => {
           </div>
    
 
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialog.isOpen} onOpenChange={(open) => !open && cancelDelete()}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <AlertTriangle className="h-5 w-5" />
+              Confirm Delete
+            </DialogTitle>
+            <DialogDescription className="pt-3">
+              Are you sure you want to delete <span className="font-semibold text-gray-900 dark:text-gray-100">{deleteDialog.monthName} {deleteDialog.year}</span>?
+              <br />
+              <span className="text-red-600 font-medium">This action cannot be undone.</span>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={cancelDelete}
+              disabled={deleteLoading}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={confirmDelete}
+              disabled={deleteLoading}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {deleteLoading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete Month
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
      
     </div>
   )

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { RootState, AppDispatch } from '../../../store/store'
 import { getdata, deleteuser, updatestatus, clearError  ,updatebothstatus  } from "../../../store/slices/userSlicer"
@@ -9,8 +9,16 @@ import Loading from '@/dashbord/ui/Loading'
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
-import { Trash2, Eye, Edit } from "lucide-react"
+import { Trash2, Eye, Edit, AlertTriangle } from "lucide-react"
 import { useNavigate } from 'react-router-dom'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
 import {
   Table,
@@ -25,6 +33,13 @@ const UsersDetails = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { data = [], loading, deleteLoading, statusloading, error, lastFetched } = useSelector((state: RootState) => state.user)
   const navigate = useNavigate();
+  
+  // Delete confirmation dialog state
+  const [deleteDialog, setDeleteDialog] = useState<{
+    isOpen: boolean;
+    userId: string | null;
+    userName: string;
+  }>({ isOpen: false, userId: null, userName: '' });
 
   useEffect(() => {
     // Use cache helper to determine if we should fetch
@@ -40,16 +55,25 @@ const UsersDetails = () => {
     }
   }, [error, dispatch]);
 
-  const handleDeleteUser = async (id: string, name: string) => {
-    if (window.confirm(`Are you sure you want to delete user "${name}"?`)) {
-      try {
-        await dispatch(deleteuser(id)).unwrap();
-        toast.success(`User "${name}" deleted successfully!`);
-      } catch (error) {
-        console.error('Error deleting user:', error);
-        // Error is already handled by the useEffect above
-      }
+  const handleDeleteUser = (id: string, name: string) => {
+    setDeleteDialog({ isOpen: true, userId: id, userName: name });
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteDialog.userId) return;
+    
+    try {
+      await dispatch(deleteuser(deleteDialog.userId)).unwrap();
+      toast.success(`User "${deleteDialog.userName}" deleted successfully!`);
+      setDeleteDialog({ isOpen: false, userId: null, userName: '' });
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      // Error is already handled by the useEffect above
     }
+  };
+
+  const cancelDelete = () => {
+    setDeleteDialog({ isOpen: false, userId: null, userName: '' });
   };
 
   const handleStatusUpdate = async (id: string, currentStatus: boolean, userName: string) => {
@@ -185,7 +209,7 @@ const UsersDetails = () => {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => user._id ? handleDeleteUser(user._id, user.name ?? '') : undefined}
+                            onClick={() => user._id && handleDeleteUser(user._id, user.name ?? '')}
                             disabled={deleteLoading}
                             className="text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300 h-8 w-8 p-0"
                           >
@@ -211,6 +235,52 @@ const UsersDetails = () => {
           </div>
         </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialog.isOpen} onOpenChange={(open) => !open && cancelDelete()}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <AlertTriangle className="h-5 w-5" />
+              Confirm Delete
+            </DialogTitle>
+            <DialogDescription className="pt-3">
+              Are you sure you want to delete user <span className="font-semibold text-gray-900 dark:text-gray-100">"{deleteDialog.userName}"</span>?
+              <br />
+              <span className="text-red-600 font-medium">This action cannot be undone.</span>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={cancelDelete}
+              disabled={deleteLoading}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={confirmDelete}
+              disabled={deleteLoading}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {deleteLoading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete User
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

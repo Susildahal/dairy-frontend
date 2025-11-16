@@ -2,7 +2,7 @@ import React, { useEffect, useState, Fragment } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { RootState, AppDispatch } from '../../../store/store'
 import { getdata } from "../../../store/slices/userSlicer"
-import { saveMilk, clearError, getDailyUserHistory } from "../../../store/slices/milkSlicer"
+import { saveMilk, clearError } from "../../../store/slices/milkSlicer"
 import { toast } from "sonner"
 import AdminHeader from '@/dashbord/common/AdminHeader'
 import Loading from '@/dashbord/ui/Loading'
@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { getsettingdata } from "../../../store/slices/sitesettingSlicer"
-import { Milk, Eye, Save, Users, History,  Sun, Moon, User } from "lucide-react"
+import { Milk, Eye, Save, Users, Sun, Moon, User } from "lucide-react"
 import {
   Table,
   TableBody,
@@ -93,9 +93,7 @@ const Addmilk = () => {
     if (!settingData) {
       dispatch(getsettingdata());
     }
-    // Fetch user history with session filter to show previous data
-    dispatch(getDailyUserHistory(selectedFilter));
-  }, [dispatch, settingData]); // Add selectedFilter as dependency
+  }, [dispatch, settingData]);
 
   useEffect(() => {
     // Only fetch users if data is stale or doesn't exist
@@ -198,9 +196,6 @@ const Addmilk = () => {
         setFieldValue(`entries.${index}.todaymoney`, 0);
 
         toast.success(`Milk entry saved successfully for ${userEntry.name}!`);
-        
-        // Refresh the data to show updated entries
-        dispatch(getDailyUserHistory(selectedFilter));
       } else {
         // Handle rejected case
         const errorMessage = resultAction.payload as string || 'Unknown error occurred';
@@ -208,11 +203,7 @@ const Addmilk = () => {
         
         // Check if it might be a false negative (data saved but error returned)
         if (errorMessage.includes('Network error') || errorMessage.includes('timeout')) {
-          toast.warning(`Network issue detected for ${userEntry.name}. Refreshing data to verify...`);
-          // Refresh data to check if it was actually saved
-          setTimeout(() => {
-            dispatch(getDailyUserHistory(selectedFilter));
-          }, 2000);
+          toast.warning(`Network issue detected for ${userEntry.name}. Please verify the entry.`);
         } else {
           toast.error(`Failed to save milk entry for ${userEntry.name}: ${errorMessage}`);
         }
@@ -286,16 +277,8 @@ const Addmilk = () => {
 
       if (successCount > 0) {
         toast.success(`Successfully saved ${successCount} milk entries!`);
-        // Refresh data to show updated entries
-        setTimeout(() => {
-          dispatch(getDailyUserHistory(selectedFilter));
-        }, 1000);
       } else if (pendingEntries.length > 0) {
         toast.warning('No entries were saved successfully. Please check your connection and try again.');
-        // Still refresh data in case some entries were actually saved
-        setTimeout(() => {
-          dispatch(getDailyUserHistory(selectedFilter));
-        }, 2000);
       }
 
     } catch (error) {
@@ -363,20 +346,7 @@ const Addmilk = () => {
                   )}
                 </Button>
                 
-                <Button 
-                  type="button"
-                  onClick={() => {
-                    // Refresh data to check for any saved entries
-                    dispatch(getDailyUserHistory(selectedFilter));
-                    toast.info('Refreshing data to check for saved entries...');
-                  }}
-                  variant="outline"
-                  disabled={isSubmitting}
-                  className="border-blue-200 text-blue-600 hover:bg-blue-50"
-                >
-                  <History className="w-4 h-4 mr-2" />
-                  Refresh Data
-                </Button>
+
                 
                 <Button 
                   type="button"

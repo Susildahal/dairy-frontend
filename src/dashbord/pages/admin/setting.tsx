@@ -34,13 +34,11 @@ const Settings = () => {
 
   const dispatch = useDispatch<AppDispatch>();
   const { data, loading, error } = useSelector((state: RootState) => state.siteSettings);
- console.log(data)
+  
   useEffect(() => {
-    // Only fetch settings if not already loaded
-    if (!data && !loading) {
-      dispatch(getsettingdata());
-    }
-  }, [dispatch, data, loading]);
+    // Fetch settings from backend on component mount
+    dispatch(getsettingdata());
+  }, [dispatch]);
 
   useEffect(() => {
     if (data) {
