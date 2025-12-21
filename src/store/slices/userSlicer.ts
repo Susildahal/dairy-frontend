@@ -72,7 +72,7 @@ export const deleteuser = createAsyncThunk("users/user/deleteuser", async (id: s
 export const register = createAsyncThunk("users/register", async (userData: any) => {
   try {
     const response = await axiosInstance.post("/users/register", userData);
-    return response.data.data;
+    return response.data.data.user;
   } catch (error: any) {
     // Return mock data as fallback for development
     console.warn("Register API call failed, using mock data:", error.message);
