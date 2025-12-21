@@ -33,7 +33,7 @@ const Settings = () => {
   const [isLoading, setIsLoading] = useState(false)
 
   const dispatch = useDispatch<AppDispatch>();
-  const { data, loading, error } = useSelector((state: RootState) => state.siteSettings);
+  const { data, loading, error, dataExists } = useSelector((state: RootState) => state.siteSettings);
   
   useEffect(() => {
     // Fetch settings from backend on component mount
@@ -62,13 +62,14 @@ const Settings = () => {
   const handleSave = async () => {
     setIsLoading(true)
     try {
-      // Use savedata if no data exists, otherwise use updatedata
-      if (!data) {
+      // Use savedata (POST) if no data exists on server, otherwise use updatedata (PUT)
+      if (!dataExists) {
         await dispatch(savedata(settings)).unwrap()
+        toast.success("Settings created successfully!")
       } else {
         await dispatch(updatedata(settings)).unwrap()
+        toast.success("Settings updated successfully!")
       }
-      toast.success("Settings saved successfully!")
     } catch (error) {
       console.error('Failed to save settings:', error)
       toast.error("Failed to save settings. Please try again.")

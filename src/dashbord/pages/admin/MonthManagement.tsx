@@ -110,8 +110,14 @@ const MonthManagement = () => {
       return
     }
 
-    if (formData.year.length) {
-      toast.error("Please enter a valid year")
+    if (formData.year.length !== 4 || isNaN(Number(formData.year))) {
+      toast.error("Please enter a valid 4-digit year")
+      return
+    }
+
+    const yearNum = parseInt(formData.year)
+    if (yearNum < 1900 || yearNum > 2100) {
+      toast.error("Year must be between 1900 and 2100")
       return
     }
 
@@ -235,7 +241,12 @@ const MonthManagement = () => {
                       id="year"
                       type="text"
                       value={formData.year}
-                      onChange={(e) => setFormData({...formData, year: e.target.value})}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, '').slice(0, 4)
+                        setFormData({...formData, year: value})
+                      }}
+                      placeholder="e.g., 2081"
+                      maxLength={4}
                       required
                       className="bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700"
                     />

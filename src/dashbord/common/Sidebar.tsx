@@ -104,16 +104,18 @@ export function Sidebar({ className, onCollapsedChange }: SidebarProps) {
         variant="ghost"
         size="icon"
         onClick={toggleMobile}
-        className="md:hidden fixed top-4 left-4 z-50 h-10 w-10 bg-white dark:bg-gray-800 shadow-lg border"
+        className="md:hidden fixed top- left-1 text-black sm:top- sm:left-4 z-50 h-12 w-12 sm:h-5 sm:w-5  dark:bg-gray-800  border rounded-lg  dark:hover:bg-gray-700 active:scale-95 transition-all touch-manipulation"
+        aria-label={isMobileOpen ? "Close menu" : "Open menu"}
       >
-        {isMobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+        {isMobileOpen ? <X className="h-6 w-6 sm:h-5 sm:w-5" /> : <Menu className="h-6 w-6 sm:h-5 sm:w-5" />}
       </Button>
 
       {/* Mobile Overlay */}
       {isMobileOpen && (
         <div
-          className="md:hidden fixed inset-0 bg-black/50 z-40"
+          className="md:hidden fixed inset-0 bg-black/50 z-40 touch-none"
           onClick={() => setIsMobileOpen(false)}
+          aria-hidden="true"
         />
       )}
 
@@ -129,7 +131,7 @@ export function Sidebar({ className, onCollapsedChange }: SidebarProps) {
           {/* Header */}
           <div className="flex items-center justify-between p-4 h-16 border-b border-gray-200 dark:border-gray-700">
             {!isCollapsed && (
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white truncate">
                 Dairy Farm
               </h2>
             )}
@@ -137,7 +139,8 @@ export function Sidebar({ className, onCollapsedChange }: SidebarProps) {
               variant="ghost"
               size="icon"
               onClick={toggleCollapsed}
-              className="h-8 w-8 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+              className="h-8 w-8 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex-shrink-0"
+              aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
             >
               {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
             </Button>
@@ -216,53 +219,55 @@ export function Sidebar({ className, onCollapsedChange }: SidebarProps) {
       {/* Mobile Sidebar */}
       <div
         className={cn(
-          "md:hidden fixed left-0 top-0 h-screen bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transition-transform duration-300 z-50 w-64 shadow-xl",
+          "md:hidden fixed left-0 top-0 h-full bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transition-transform duration-300 z-50 shadow-xl overflow-hidden",
+          "w-[280px] sm:w-64 max-w-[85vw]",
           isMobileOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
         <div className="flex flex-col w-full h-full">
           {/* Mobile Header */}
-          <div className="flex items-center justify-between p-4 h-16 border-b border-gray-200 dark:border-gray-700">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+          <div className="flex items-center justify-between p-3 sm:p-4 h-14 sm:h-16 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+            <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white truncate">
               Dairy Farm
             </h2>
             <Button
               variant="ghost"
               size="icon"
               onClick={toggleMobile}
-              className="h-8 w-8 text-gray-600 dark:text-gray-300"
+              className="h-9 w-9 sm:h-8 sm:w-8 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex-shrink-0 touch-manipulation"
+              aria-label="Close menu"
             >
-              <X className="h-4 w-4" />
+              <X className="h-5 w-5 sm:h-4 sm:w-4" />
             </Button>
           </div>
 
           {/* Mobile Search */}
-          <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+          <div className="p-3 sm:p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
                 placeholder="Search menu..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 h-9"
+                className="pl-10 h-10 sm:h-9 text-base sm:text-sm"
               />
             </div>
           </div>
 
           {/* Mobile Navigation */}
-          <ScrollArea className="flex-1 px-3 py-4">
-            <nav className="space-y-2">
+          <ScrollArea className="flex-1 px-2 sm:px- py-3 sm:py-">
+            <nav className="space-y-1 sm:space-y-2">
               {filteredItems.map((item) => (
                 <Link key={item.href} to={item.href}>
                   <Button
                     variant="ghost"
                     className={cn(
-                      "w-full justify-start text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 px-3 transition-colors",
+                      "w-full justify-start text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 px-3 transition-colors h-11 sm:h-10 text-base sm:text-sm touch-manipulation",
                       pathname === item.href && "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300 border-r-2 border-green-500",
                     )}
                   >
-                    <item.icon className="h-4 w-4 mr-3" />
-                    <span>{item.title}</span>
+                    <item.icon className="h-5 w-5 sm:h-4 sm:w-4 mr-3 flex-shrink-0" />
+                    <span className="truncate">{item.title}</span>
                   </Button>
                 </Link>
               ))}
@@ -270,10 +275,10 @@ export function Sidebar({ className, onCollapsedChange }: SidebarProps) {
           </ScrollArea>
 
           {/* Mobile Footer */}
-          <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="p-3 sm:p-4 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
             <div className="flex items-center space-x-3">
-              <div className="h-8 w-8 rounded-full bg-green-500 flex items-center justify-center">
-                <span className="text-sm font-medium text-white">
+              <div className="h-10 w-10 sm:h-8 sm:w-8 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
+                <span className="text-base sm:text-sm font-medium text-white">
                   {data?.name ? data.name.charAt(0).toUpperCase() : "A"}
                 </span>
               </div>
