@@ -67,9 +67,53 @@ const sidebarItems = [
     icon: Settings,
     href: "/admin/settings",
   },
-
-  
 ]
+
+// Role-based routes array for navigation
+export const roleBasedRoutes = [
+  {
+    title: "Admin Dashboard",
+    path: "/admin/dashboard",
+    allowedRoles: ["admin"], // Add more roles as needed
+  },
+  {
+    title: "User Dashboard",
+    path: "/admin/user-dashboard",
+    allowedRoles: ["user", "admin"],
+  },
+  {
+    title: "Users Details",
+    path: "/admin/users",
+    allowedRoles: ["admin"],
+  },
+  {
+    title: "Create User",
+    path: "/admin/users/create",
+    allowedRoles: ["admin"],
+  },
+  {
+    title: "Add Daily Milk",
+    path: "/admin/milk",
+    allowedRoles: ["admin"],
+  },
+  {
+    title: "Milk Management",
+    path: "/admin/milk-management",
+    allowedRoles: ["admin"],
+  },
+  {
+    title: "Add Month",
+    path: "/admin/add-month",
+    allowedRoles: ["admin"],
+  },
+  {
+    title: "Settings",
+    path: "/admin/settings",
+    allowedRoles: ["admin"],
+  },
+]
+
+
 export function Sidebar({ className, onCollapsedChange }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [isMobileOpen, setIsMobileOpen] = useState(false)
@@ -77,6 +121,7 @@ export function Sidebar({ className, onCollapsedChange }: SidebarProps) {
   const location = useLocation()
   const pathname = location.pathname
   const { data } = useSelector((state: RootState) => state.mee)
+
 
   const toggleCollapsed = () => {
     const newCollapsed = !isCollapsed
@@ -107,7 +152,7 @@ export function Sidebar({ className, onCollapsedChange }: SidebarProps) {
         className="md:hidden fixed top- left-1 text-black sm:top- sm:left-4 z-50 h-12 w-12 sm:h-5 sm:w-5  dark:bg-gray-800  border rounded-lg  dark:hover:bg-gray-700 active:scale-95 transition-all touch-manipulation"
         aria-label={isMobileOpen ? "Close menu" : "Open menu"}
       >
-        {isMobileOpen ? <X className="h-6 w-6 sm:h-5 sm:w-5" /> : <Menu className="h-6 w-6 sm:h-5 sm:w-5" />}
+        {isMobileOpen ? <X className="h-6 w-6 sm:h-5 sm:w-5" /> :  <Menu className="h-6 w-6 sm:h-5 sm:w-5" />}
       </Button>
 
       {/* Mobile Overlay */}
@@ -217,6 +262,7 @@ export function Sidebar({ className, onCollapsedChange }: SidebarProps) {
       </div>
 
       {/* Mobile Sidebar */}
+      
       <div
         className={cn(
           "md:hidden fixed left-0 top-0 h-full bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 transition-transform duration-300 z-50 shadow-xl overflow-hidden",
@@ -224,6 +270,7 @@ export function Sidebar({ className, onCollapsedChange }: SidebarProps) {
           isMobileOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
+      
         <div className="flex flex-col w-full h-full">
           {/* Mobile Header */}
           <div className="flex items-center justify-between p-3 sm:p-4 h-14 sm:h-16 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">

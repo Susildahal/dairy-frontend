@@ -421,12 +421,12 @@ const Addmilk = () => {
                       <TableRow className="">
                         <TableHead className="font-semibold w-12">#</TableHead>
                         <TableHead className="font-semibold min-w-32">Name</TableHead>
-                        <TableHead className="font-semibold min-w-24">Tag Number</TableHead>
+                        <TableHead className="font-semibold min-w-24 hidden md:table-cell">Tag Number</TableHead>
                         <TableHead className="font-semibold min-w-32">Milk Quantity (L)</TableHead>
                         <TableHead className="font-semibold min-w-32">Fat Percentage (%)</TableHead>
                         <TableHead className="font-semibold min-w-32">Total Money (₹)</TableHead>
                         <TableHead className="font-semibold min-w-32">Status</TableHead>
-                        <TableHead className="font-semibold min-w-32">Last update</TableHead>
+                        <TableHead className="font-semibold min-w-32 hidden md:table-cell">Last update</TableHead>
                         <TableHead className="font-semibold min-w-32">Action</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -478,7 +478,7 @@ const Addmilk = () => {
                                         <div className="text-sm text-gray-500">{user.phone || 'No phone'}</div>
                                       </div>
                                     </TableCell>
-                                    <TableCell className="py-4">
+                                    <TableCell  className="py-4 hidden  md:table-cell">
                                       <Badge variant="outline" className="text-xs">
                                         {user.tagnumber || 'N/A'}
                                       </Badge>
@@ -571,7 +571,7 @@ const Addmilk = () => {
                                         )}
                                       </div>
                                     </TableCell>
-                                    <TableCell className="py-4">
+                                    <TableCell className="py-4 ">
                                       {entry.submitted ? (
                                         <Badge variant="default" className="bg-green-600 text-white">
                                           Submitted
@@ -590,7 +590,7 @@ const Addmilk = () => {
                                         </Badge>
                                       )}
                                     </TableCell>
-                                    <TableCell>
+                                    <TableCell className=' hidden md:table-cell'>
                                       {(() => {
                                         if (!user.updatedAt) {
                                           return <div className="text-xs text-gray-500">No updates</div>;

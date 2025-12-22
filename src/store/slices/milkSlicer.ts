@@ -239,8 +239,18 @@ export const getDailyUserHistory = createAsyncThunk(
   }
 )
 
-
-
+// Thunk to delete a milk entry
+export const deleteMilk = createAsyncThunk(
+    'milk/deleteMilk',
+    async (id: string, { rejectWithValue }) => {
+        try {
+            await axiosInstance.delete(`/milk/${id}`);
+            return id;
+        } catch (error: any) {
+            return rejectWithValue(error.response?.data?.message || 'Failed to delete milk entry');
+        }
+    }
+);
 
 const milkSlice = createSlice({
   name: 'milk',
@@ -332,6 +342,18 @@ const milkSlice = createSlice({
       .addCase(getDailyUserHistory.rejected, (state, action) => {
         state.userHistoryLoading = false
         state.error = action.error.message || 'Failed to fetch user history'
+      })
+      // Delete milk entry
+      .addCase(deleteMilk.pending, (state) => {
+        state.loading = true
+      })
+      .addCase(deleteMilk.fulfilled, (state, action) => {
+        state.loading = false
+        state.milkEntries = state.milkEntries.filter(entry => entry._id !== action.payload)
+      })
+      .addCase(deleteMilk.rejected, (state, action) => {
+        state.loading = false
+        state.error = action.payload
       })
   }
 })

@@ -1,11 +1,12 @@
 import React, { useEffect, useState, useMemo } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { RootState, AppDispatch } from '../../../store/store'
-import { getAllMilk, updateMilk } from '../../../store/slices/milkSlicer'
+import { getAllMilk, updateMilk, deleteMilk } from '../../../store/slices/milkSlicer'
 import { getAllMonths } from "../../../store/slices/monthslicer"
 import { getdata } from "../../../store/slices/userSlicer"
 import { UserPDFModal } from './components/UserPDFModal'
 import axios from 'axios'
+import ConfirmDeleteDialog from "@/components/ui/ConfirmDeleteDialog";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../components/ui/card"
 import { Button } from "../../../components/ui/button"
@@ -18,9 +19,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { 
   Calendar, Download, FileText, RotateCcw, ChevronLeft, ChevronRight, 
   ChevronsLeft, ChevronsRight, Edit, Search, Filter, PlusCircle, ArrowUpDown, 
-  Pencil
+  Pencil,
+  Trash2
 } from "lucide-react"
 import { toast } from 'sonner'
+
 
 interface FilterParams {
   userid?: string
@@ -77,6 +80,10 @@ const MilkManagement: React.FC = () => {
     session: 'morning'
   })
   const [updateLoading, setUpdateLoading] = useState(false)
+
+  // Delete confirmation modal state
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [deleteEntryId, setDeleteEntryId] = useState<string | null>(null)
 
   useEffect(() => {
     if(!months || months.length === 0)
@@ -239,7 +246,41 @@ const MilkManagement: React.FC = () => {
     )
   }
 
+  const handleDelete = async (id: string) => {
+    try {
+      await dispatch(deleteMilk(id)).unwrap();
+      toast.success('Milk entry deleted successfully');
+      fetchMilkData();
+    } catch (error) {
+      console.error('Error deleting milk entry:', error);
+      toast.error('Error deleting milk entry');
+    }
+  }
+
+  // Open delete confirmation modal
+  const openDeleteModal = (id: string) => {
+    setDeleteEntryId(id);
+    setDeleteModalOpen(true);
+  }
+
+  // Confirm delete
+  const confirmDelete = async () => {
+    if (deleteEntryId) {
+      await handleDelete(deleteEntryId);
+      setDeleteEntryId(null);
+      setDeleteModalOpen(false);
+    }
+  }
+
+  // Cancel delete
+  const cancelDelete = () => {
+    setDeleteEntryId(null);
+    setDeleteModalOpen(false);
+  }
+
+
   return (
+    <>
     <div className="container mx-auto px-2 sm:px-4 pb-4 space-y-3 sm:space-y-4">
       {/* Navbar-style header */}
       <div className="relative  bg-white top-0 z-10 p-2 sm:p-0">
@@ -320,16 +361,11 @@ const MilkManagement: React.FC = () => {
                 <RotateCcw className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
                 <span className="sm:inline">Reset</span>
               </Button>
-              
-              <Button onClick={() => setShowUserReportModal(true)} variant="default" size="sm" className="h-8 sm:h-9 text-xs sm:text-sm bg-blue-600 hover:bg-blue-700">
-                <FileText className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
-                <span className="sm:inline">PDF Report</span>
-              </Button>
             </div>
           </div>
         </div>
       </div>
-
+      
       {/* Results Summary */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
         <Card className="shadow-sm border-blue-100">
@@ -422,6 +458,7 @@ const MilkManagement: React.FC = () => {
                         </Badge>
                       </TableCell>
                       <TableCell className="py-1.5 sm:py-2.5">
+                        <div>
                         <Button 
                           variant="ghost" 
                           size="sm" 
@@ -430,6 +467,18 @@ const MilkManagement: React.FC = () => {
                         >
                           <Pencil className="h-3 w-3 sm:h-4 sm:w-4" />
                         </Button>
+                          <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-6 w-6 sm:h-8 sm:w-8 p-0 text-red-600"
+                          onClick={() => openDeleteModal(entry._id)}
+                        >
+                          <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
+                        </Button>
+
+</div>
+
+
                       </TableCell>
                     </TableRow>
                   )
@@ -625,7 +674,19 @@ const MilkManagement: React.FC = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDeleteDialog
+        open={deleteModalOpen}
+        onConfirm={confirmDelete}
+        onCancel={cancelDelete}
+        title="Confirm Delete"
+        description="Are you sure you want to delete this milk entry? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+      />
     </div>
+    </>
   )
 }
 

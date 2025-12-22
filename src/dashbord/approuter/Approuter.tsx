@@ -14,7 +14,8 @@ const NotFound = lazy(() => import("../common/NotFound"));
 const User = lazy(() => import("../pages/admin/UsersDetails"));
 
 // Lazy load pages
-const LandingPage = lazy(() => import("../pages/public/LandingPage"));
+// const LandingPage = lazy(() => import("../pages/public/LandingPage"));
+// const  UserHome from "../pages/user/UserHome";
 const UserHome = lazy(() => import("../pages/user/UserHome"));
 const UserDashboard = lazy(() => import("../pages/user/UserDashboard"));
 const AdminDashboard = lazy(() => import("../pages/admin/AdminDashboard"));
@@ -31,7 +32,7 @@ export default function AppRouter() {
             <Suspense fallback={<Loading />}>
                 <Routes>
                     {/* Public Landing Page - Available for everyone */}
-                    <Route path="/" element={<LandingPage />} />
+                    <Route path="/" element={<UserHome />} />
                     
                     {/* Public Routes */}
                     <Route path="/login" element={<Login />} />
