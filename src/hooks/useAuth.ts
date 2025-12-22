@@ -16,10 +16,11 @@ export const useAuth = () => {
   const dispatch = useDispatch<AppDispatch>()
   const { data: user, loading: isLoading } = useSelector((state: RootState) => state.mee)
   
-  // Calculate authentication status directly from Redux state and localStorage
+  // Calculate authentication status with mobile browser fallbacks
   const isAuthenticated = (() => {
     const flag = localStorage.getItem('flag')
-    return flag === 'true' && !!user
+    const authCookie = document.cookie.includes('auth_status=true')
+    return (flag === 'true' || authCookie) && !!user
   })()
 
   useEffect(() => {
@@ -79,9 +80,18 @@ export const useAuth = () => {
     }
   }
 
-  const logout = () => {
-    localStorage.removeItem('flag')
-    dispatch(clearMeeData())
+  const logout = async () => {
+    try {
+      // Call backend logout endpoint to clear server-side cookies
+      await axiosInstance.post('/users/user/logout')
+    } catch (error) {
+      console.error('Logout API call failed:', error)
+      // Continue with client-side cleanup even if API fails
+    } finally {
+      // Always clear client-side state
+      localStorage.removeItem('flag')
+      dispatch(clearMeeData())
+    }
   }
 
   const isAdmin = (): boolean => {

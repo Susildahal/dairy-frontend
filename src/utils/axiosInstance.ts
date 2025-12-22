@@ -14,6 +14,17 @@ const axiosInstance = axios.create({
 
 axiosInstance.interceptors.request.use(
   (config) => {
+    // Add auth token to headers as fallback for mobile browsers
+    const flag = localStorage.getItem('flag');
+    if (flag === 'true') {
+      // Try to get token from document.cookie as fallback
+      const cookies = document.cookie.split(';');
+      const tokenCookie = cookies.find(c => c.trim().startsWith('token='));
+      if (tokenCookie) {
+        const token = tokenCookie.split('=')[1];
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    }
     return config;
   },
   (error) => Promise.reject(error)
