@@ -102,7 +102,8 @@ const UsersDetails = () => {
     return <Loading />
   }
   return (
-    <div className="space-y-2">
+  <div className="space-y-4 w-full   mx-auto ">
+
       <AdminHeader 
         title="User Management" 
         subtitle="Manage and monitor all system users" 
@@ -123,7 +124,7 @@ const UsersDetails = () => {
             </div>
           </div>
           
-          <div className="overflow-x-auto">
+     <div className=" overflow-x-hidden ">
             <Table>
               <TableHeader>
                 <TableRow className="border-gray-200 dark:border-gray-700">

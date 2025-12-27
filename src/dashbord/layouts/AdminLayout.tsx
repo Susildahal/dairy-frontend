@@ -9,11 +9,11 @@ export default function AdminLayout() {
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
       <Sidebar onCollapsedChange={setSidebarCollapsed} />
-      <div className={`flex-1 flex flex-col transition-all duration-300 ${
+      <div className={`flex-1 flex flex-col transition-all  overflow-x-hidden    duration-300 ${
         sidebarCollapsed ? 'md:ml-16' : 'md:ml-64'
       } ml-0`}>
         <Header />
-        <main className="flex-1 overflow-auto p-4 md:p-6">
+        <main className="flex-1  p-4  md:p-6">
           <Outlet />
         </main>
       </div>

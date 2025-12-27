@@ -149,7 +149,7 @@ export function Sidebar({ className, onCollapsedChange }: SidebarProps) {
         variant="ghost"
         size="icon"
         onClick={toggleMobile}
-        className="md:hidden fixed top- left-1 text-black sm:top- sm:left-4 z-50 h-12 w-12 sm:h-5 sm:w-5  dark:bg-gray-800  border rounded-lg  dark:hover:bg-gray-700 active:scale-95 transition-all touch-manipulation"
+        className="md:hidden fixed top- left-1 text-black sm:top- sm:left-4 z-50 h-12 w-12 sm:h-5 sm:w-5  dark:bg-gray-800   rounded-lg  dark:hover:bg-gray-700 active:scale-95 transition-all touch-manipulation"
         aria-label={isMobileOpen ? "Close menu" : "Open menu"}
       >
         {isMobileOpen ? <X className="h-6 w-6 sm:h-5 sm:w-5" /> :  <Menu className="h-6 w-6 sm:h-5 sm:w-5" />}
@@ -174,7 +174,7 @@ export function Sidebar({ className, onCollapsedChange }: SidebarProps) {
       >
         <div className="flex flex-col w-full">
           {/* Header */}
-          <div className="flex items-center justify-between p-4 h-16 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between p-4 h-16  border-gray-200 dark:border-gray-700">
             {!isCollapsed && (
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white truncate">
                 Dairy Farm
@@ -193,7 +193,7 @@ export function Sidebar({ className, onCollapsedChange }: SidebarProps) {
 
           {/* Search */}
           {!isCollapsed && (
-            <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+            <div className="p-4  border-gray-200 dark:border-gray-700">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
@@ -273,7 +273,7 @@ export function Sidebar({ className, onCollapsedChange }: SidebarProps) {
       
         <div className="flex flex-col w-full h-full">
           {/* Mobile Header */}
-          <div className="flex items-center justify-between p-3 sm:p-4 h-14 sm:h-16 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+          <div className="flex items-center justify-between p-3 sm:p-4 h-14 sm:h-16 border-gray-200 dark:border-gray-700 flex-shrink-0">
             <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white truncate">
               Dairy Farm
             </h2>
@@ -289,7 +289,7 @@ export function Sidebar({ className, onCollapsedChange }: SidebarProps) {
           </div>
 
           {/* Mobile Search */}
-          <div className="p-3 sm:p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+          <div className="p-3 sm:p-4  border-gray-200 dark:border-gray-700 flex-shrink-0">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
