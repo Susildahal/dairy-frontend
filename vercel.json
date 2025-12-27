@@ -1,8 +1,11 @@
 {
   "rewrites": [
     {
-      "source": "/api/(.*)",
-      "destination": "https://dairy-backend-hwt2.onrender.com/$1"
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
+
+
+

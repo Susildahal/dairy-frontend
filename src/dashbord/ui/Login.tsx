@@ -48,6 +48,8 @@ export default function LoginPage() {
       if (response.status === 200) {
         // Set flag first
         localStorage.setItem("flag","true")
+        const token = response.data.auth_token
+      localStorage.setItem("auth_token" ,token)
         
         // Call login to get user data and set auth state
         const userData = await login()
@@ -61,7 +63,7 @@ export default function LoginPage() {
           } else {
             navigator("/dashboard")
           }
-        }, 500) // Reduced delay but still ensures state update
+        }, 100) // Reduced delay but still ensures state update
       } else { 
         throw new Error("Login failed")
       }
