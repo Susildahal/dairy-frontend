@@ -7,7 +7,6 @@ import { getdata } from "../../../store/slices/userSlicer"
 import { UserPDFModal } from '../admin/components/UserPDFModal'
 import { useAuth } from '../../../hooks/useAuth'
 import {Header} from '../../common/Header'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../../components/ui/card"
 import { Button } from "../../../components/ui/button"
 import { Badge } from "../../../components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../../components/ui/table"
@@ -49,8 +48,7 @@ const UserDashboard: React.FC = () => {
   // Filter states
   const [filters, setFilters] = useState<FilterParams>(
     user ? {
-      userid: user._id, // Set the authenticated user's ID by default
-      page: 1,
+     page: 1,
       limit: 10
     } : {
       page: 1, 
@@ -105,7 +103,6 @@ const UserDashboard: React.FC = () => {
   // Reset all filters except userid
   const handleResetFilters = () => {
     setFilters({
-      userid: user?._id, // Keep the authenticated user's ID
       page: 1,
       limit: 10
     })
@@ -174,7 +171,7 @@ const UserDashboard: React.FC = () => {
             <p className="text-sm text-gray-600 mt-1">Name: {user.name}</p>
           )}
         </div>
-        <Button onClick={() => setShowUserReportModal(true)} variant="outline" size="sm">
+        <Button onClick={() => setShowUserReportModal(true)} variant="outline" className='cursor-pointer' size="sm">
           <FileText className="w-4 h-4 mr-2" />
           PDF Reports
         </Button>
@@ -194,7 +191,7 @@ const UserDashboard: React.FC = () => {
           <div className="space-y-1">
             <Label className="text-sm">Month</Label>
             <Select value={filters.monthid || 'all'} onValueChange={(value) => handleFilterChange('monthid', value === 'all' ? undefined : value)}>
-              <SelectTrigger className="h-9">
+              <SelectTrigger className="h-9 w-full">
                 <SelectValue placeholder="Select month" />
               </SelectTrigger>
               <SelectContent>
@@ -212,7 +209,7 @@ const UserDashboard: React.FC = () => {
           <div className="space-y-1">
             <Label className="text-sm">Session</Label>
             <Select value={selectedFilter} onValueChange={(value: 'all' | 'morning' | 'night') => setSelectedFilter(value)}>
-              <SelectTrigger className="h-9">
+              <SelectTrigger className="h-9 w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -227,7 +224,7 @@ const UserDashboard: React.FC = () => {
           <div className="space-y-1">
             <Label className="text-sm">Records per page</Label>
             <Select value={String(filters.limit)} onValueChange={(value) => handleFilterChange('limit', parseInt(value))}>
-              <SelectTrigger className="h-9">
+              <SelectTrigger className="h-9 w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -345,7 +342,7 @@ const UserDashboard: React.FC = () => {
                 disabled={pagination.currentPage <= 1}
               >
                 <ChevronLeft className="h-3 w-3" />
-              </Button>
+              </Button>      
               
               {/* Page Numbers */}
               {pagination.totalPages && Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
@@ -402,7 +399,6 @@ const UserDashboard: React.FC = () => {
           onClose={() => setShowUserReportModal(false)}
           users={[data.find((u: any) => u._id === user._id)].filter(Boolean)}
           months={months || []}
-          // defaultUserId={user._id}
         />
       )}
     </div>

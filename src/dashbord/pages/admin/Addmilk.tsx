@@ -149,7 +149,7 @@ const Addmilk = () => {
   const canUpdateUser = (updatedAt: string | undefined): boolean => {
     if (!updatedAt) return true;
     const lastUpdate = new Date(updatedAt).getTime();
-    const oneHourAgo = Date.now() - (60 * 60 * 1000);
+    const oneHourAgo = Date.now() - (0 * 0 * 0);
     return lastUpdate < oneHourAgo;
   };
 

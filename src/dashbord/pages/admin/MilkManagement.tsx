@@ -303,7 +303,7 @@ const MilkManagement: React.FC = () => {
                   <SelectTrigger className="h-8 sm:h-9 text-xs sm:text-sm w-full">
                     <SelectValue placeholder="User" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="max-h-[40vh] sm:max-h-[300px]">
                     <SelectItem value="all">All Users</SelectItem>
                     {data?.map((user: any) => (
                       <SelectItem key={user._id} value={user._id}>
@@ -318,7 +318,7 @@ const MilkManagement: React.FC = () => {
                   <SelectTrigger className="h-8 sm:h-9 text-xs sm:text-sm w-full">
                     <SelectValue placeholder="Month" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="max-h-[40vh] sm:max-h-[300px]">
                     <SelectItem value="all">All Months</SelectItem>
                     {months?.map((month: any) => (
                       <SelectItem key={month._id} value={month._id}>
@@ -572,7 +572,7 @@ const MilkManagement: React.FC = () => {
         <UserPDFModal
           isOpen={showUserReportModal}
           onClose={() => setShowUserReportModal(false)}
-          users={data || []}
+          users={data.filter((user: any) => user.role === 'user') || []}
           months={months || []}
         />
       )}

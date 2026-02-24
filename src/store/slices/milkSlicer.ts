@@ -353,7 +353,7 @@ const milkSlice = createSlice({
       })
       .addCase(deleteMilk.rejected, (state, action) => {
         state.loading = false
-        state.error = action.payload
+        
       })
   }
 })

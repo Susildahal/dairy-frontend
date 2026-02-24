@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useDispatch } from 'react-redux'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label'
 import { FileText,  AlertCircle } from 'lucide-react'
 import { generateUserMonthlyPDF, generateAllUsersPDF } from '../utils/pdfUtils'
 import { getAllMilk } from '../../../../store/slices/milkSlicer'
+import { getdata } from '../../../../store/slices/userSlicer'
 import { AppDispatch } from '../../../../store/store'
 
 interface UserPDFModalProps {
@@ -19,16 +20,43 @@ interface UserPDFModalProps {
 export const UserPDFModal: React.FC<UserPDFModalProps> = ({
   isOpen,
   onClose,
-  users,
+  users: usersProp,
   months
 }) => {
   const dispatch = useDispatch<AppDispatch>()
+  const [allUsers, setAllUsers] = useState<any[]>([])
+  const [loadingUsers, setLoadingUsers] = useState(false)
   const [selectedUser, setSelectedUser] = useState('')
   const [selectedMonth, setSelectedMonth] = useState('')
   const [loadingData, setLoadingData] = useState(false)
   const [reportType, setReportType] = useState<'single' | 'all'>('single')
   const [statusMessage, setStatusMessage] = useState('')
   const [messageType, setMessageType] = useState<'success' | 'error' | 'info'>('info')
+
+  // Fetch all users when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      fetchAllUsers()
+    }
+  }, [isOpen])
+
+  const fetchAllUsers = async () => {
+    try {
+      setLoadingUsers(true)
+      const response = await dispatch(getdata())
+      if (response.payload) {
+        // Filter only users with role 'user'
+        const users = (response.payload as any[]).filter((user: any) => user.role === 'user')
+        setAllUsers(users)
+        console.log('UserPDFModal - Fetched users from API:', users.length)
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error)
+      showMessage('Failed to load users', 'error')
+    } finally {
+      setLoadingUsers(false)
+    }
+  }
 
   // Function to show status messages
   const showMessage = (message: string, type: 'success' | 'error' | 'info') => {
@@ -65,11 +93,11 @@ export const UserPDFModal: React.FC<UserPDFModalProps> = ({
           return
         }
         
-        const user = users.find(u => u._id === selectedUser)
+        const user = allUsers.find(u => u._id === selectedUser)
         const month = months.find(m => m._id === selectedMonth)
         
-        // Generate the PDF
-        generateUserMonthlyPDF(userData, user?.name || 'Unknown User', month)
+        // Generate the PDF (async to load fonts)
+        await generateUserMonthlyPDF(userData, user?.name || 'Unknown User', month)
         showMessage('PDF generated successfully!', 'success')
       } else {
         showMessage('No data returned from server', 'error')
@@ -109,8 +137,8 @@ export const UserPDFModal: React.FC<UserPDFModalProps> = ({
         
         const month = months.find(m => m._id === selectedMonth)
         
-        // Generate the PDF
-        generateAllUsersPDF(allUsersData, month)
+        // Generate the PDF (async to load fonts)
+        await generateAllUsersPDF(allUsersData, month)
         showMessage('All users PDF generated successfully!', 'success')
       } else {
         showMessage('No data returned from server', 'error')
@@ -134,9 +162,9 @@ export const UserPDFModal: React.FC<UserPDFModalProps> = ({
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <Card className="w-full max-w-md m-4">
-        <CardHeader className="bg-blue-50">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+      <Card className="w-full max-w-md my-auto max-h-[95vh] overflow-y-auto">
+        <CardHeader className="">
           <div className="flex justify-between items-center">
             <CardTitle className="text-xl font-bold text-blue-700">
               PDF Report Generator
@@ -154,6 +182,9 @@ export const UserPDFModal: React.FC<UserPDFModalProps> = ({
             </Button>
           </div>
           <p className="text-gray-600 text-sm">Generate and download PDF reports one at a time</p>
+          <p className="text-blue-600 text-xs mt-1">
+            {loadingUsers ? 'Loading users...' : `Available: ${allUsers.length} users, ${months.length} months`}
+          </p>
         </CardHeader>
         
         <CardContent className="space-y-6 pt-6">
@@ -164,15 +195,19 @@ export const UserPDFModal: React.FC<UserPDFModalProps> = ({
           <div className="space-y-2">
             <Label className="text-base font-semibold">Select Month *</Label>
             <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-              <SelectTrigger>
+              <SelectTrigger className='w-full'>
                 <SelectValue placeholder="Choose a month" />
               </SelectTrigger>
-              <SelectContent>
-                {months.map((month: any) => (
-                  <SelectItem key={month._id} value={month._id}>
-                    {month.month} {month.year}
-                  </SelectItem>
-                ))}
+              <SelectContent className="max-h-[40vh] sm:max-h-[300px]">
+                {months && months.length > 0 ? (
+                  months.map((month: any) => (
+                    <SelectItem key={month._id} value={month._id}>
+                      {month.month} {month.year}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <div className="p-2 text-sm text-gray-500">No months available</div>
+                )}
               </SelectContent>
             </Select>
           </div>
@@ -182,17 +217,26 @@ export const UserPDFModal: React.FC<UserPDFModalProps> = ({
             <div className="space-y-2">
               <Label className="text-base font-semibold">Select User *</Label>
               <Select value={selectedUser} onValueChange={setSelectedUser}>
-                <SelectTrigger>
+                <SelectTrigger className='w-full'>
                   <SelectValue placeholder="Choose a user" />
                 </SelectTrigger>
-                <SelectContent>
-                  {users.map((user: any) => (
-                    <SelectItem key={user._id} value={user._id}>
-                      {user.name}
-                    </SelectItem>
-                  ))}
+                <SelectContent className="max-h-[40vh] sm:max-h-[300px]">
+                  {loadingUsers ? (
+                    <div className="p-2 text-sm text-gray-500">Loading users...</div>
+                  ) : allUsers && allUsers.length > 0 ? (
+                    allUsers.map((user: any) => (
+                      <SelectItem key={user._id} value={user._id}>
+                        {user.name} {user.tagnumber ? `(${user.tagnumber})` : ''}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <div className="p-2 text-sm text-gray-500">No users available</div>
+                  )}
                 </SelectContent>
               </Select>
+              {!loadingUsers && (!allUsers || allUsers.length === 0) && (
+                <p className="text-red-500 text-xs">No users found. Please ensure users are loaded.</p>
+              )}
             </div>
           )}
 
