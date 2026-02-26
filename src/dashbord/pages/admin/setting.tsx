@@ -275,19 +275,25 @@ const Settings = () => {
           </CardContent>
         </Card>
       </div>
-<div>
-            <h3>Nepali Date</h3>
+<div className="max-w-sm p-6 bg-white border border-gray-200 rounded-lg shadow-sm">
+  <h3 className="mb-4 text-lg font-semibold text-gray-800">Nepali Date</h3>
+  
+  <div className="relative">
+    <NepaliDatePicker
+      inputClassName="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all"
+      className="datepicker-container"
+      value={date}
+      onChange={(value) => setDate(value)}
+      options={{ calenderLocale: "ne", valueLocale: "en" }}
+    />
+  </div>
 
-      <NepaliDatePicker
-        inputClassName="form-control"
-        className=""
-        value={date}
-        onChange={(value) => setDate(value)}
-        options={{ calenderLocale: "ne", valueLocale: "en" }}
-      />
+  <div className="mt-4 p-3 bg-gray-50 rounded-md border-l-4 border-blue-500">
+    <span className="text-sm text-gray-500 block uppercase tracking-wide">Selected BS Date</span>
+    <span className="text-lg font-medium text-gray-900">{date || '---'}</span>
+  </div>
+</div>
 
-      <p>Selected BS Date: {date}</p>
-    </div>
 
 
     </div>
