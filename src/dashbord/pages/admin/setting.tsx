@@ -292,7 +292,7 @@ const Settings = () => {
       <span
         className="absolute left-10 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none select-none"
       >
-        Select Nepali date
+        Select Nepali date <Calendar className='h-4 w-4  relative bottom-0 right-3  ml-1 text-gray-400' />
       </span>
     )}
   </div>
