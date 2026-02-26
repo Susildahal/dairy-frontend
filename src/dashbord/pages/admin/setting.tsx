@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { Save, Settings as SettingsIcon, User, Mail, Phone, DollarSign } from "lucide-react"
+import { Calendar } from "lucide-react";
 import { toast } from "sonner"
 import { useDispatch, useSelector } from 'react-redux'
 import { updatedata, getsettingdata, savedata } from "../../../store/slices/sitesettingSlicer"
@@ -279,8 +280,9 @@ const Settings = () => {
   <h3 className="mb-4 text-lg font-semibold text-gray-800">Nepali Date</h3>
   
   <div className="relative">
+    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
     <NepaliDatePicker
-      inputClassName="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all"
+      inputClassName="pl-10 w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all"
       className="datepicker-container"
       value={date}
       onChange={(value) => setDate(value)}
@@ -288,7 +290,7 @@ const Settings = () => {
     />
     {!date && (
       <span
-        className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none select-none"
+        className="absolute left-10 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none select-none"
       >
         Select Nepali date
       </span>
