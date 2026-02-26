@@ -280,19 +280,19 @@ const Settings = () => {
   <h3 className="mb-4 text-lg font-semibold text-gray-800">Nepali Date</h3>
   
   <div className="relative">
-    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
     <NepaliDatePicker
-      inputClassName="pl-10 w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all"
+      inputClassName="w-full px-4 py-2 pr-10 cursor-pointer border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all"
       className="datepicker-container"
       value={date}
       onChange={(value) => setDate(value)}
       options={{ calenderLocale: "ne", valueLocale: "en" }}
     />
+    <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
     {!date && (
       <span
-        className="absolute left-10 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none select-none"
+        className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none select-none"
       >
-        Select Nepali date <Calendar className='h-4 w-4  relative bottom-0 right-3  ml-1 text-gray-400' />
+        Select Nepali date
       </span>
     )}
   </div>
