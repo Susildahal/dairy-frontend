@@ -56,7 +56,7 @@ const milkEntrySchema = Yup.object().shape({
     .max(1000, 'Milk quantity seems too high')
     .required('Milk quantity is required'),
   todayfit: Yup.number()
-    .min(0, 'Fat percentage cannot be negative')
+    .min(1, 'Fat percentage must be at least 1%')
     .max(10, 'Fat percentage cannot exceed 10%')
     .required('Fat percentage is required')
   
@@ -149,7 +149,7 @@ const Addmilk = () => {
   const canUpdateUser = (updatedAt: string | undefined): boolean => {
     if (!updatedAt) return true;
     const lastUpdate = new Date(updatedAt).getTime();
-    const oneHourAgo = Date.now() - (0 * 0 * 0);
+    const oneHourAgo = Date.now() - (60 * 60 * 1000); // 1 hour  only
     return lastUpdate < oneHourAgo;
   };
 
@@ -172,8 +172,8 @@ const Addmilk = () => {
         return;
       }
 
-      if (fitQuantity < 0 || fitQuantity > 100) {
-        toast.error(`Invalid fat percentage for ${userEntry.name}. Must be between 0 and 100`);
+      if (fitQuantity < 1 || fitQuantity > 10) {
+        toast.error(`Invalid fat percentage for ${userEntry.name}. Must be between 1 and 10`);
         setSubmittingUser(null);
         return;
       }
@@ -531,8 +531,8 @@ const Addmilk = () => {
                                             name={`entries.${index}.todayfit`}
                                             type="number"
                                             step="0.1"
-                                            min="0"
-                                            max="100"
+                                            min="1"
+                                            max="10"
                                             placeholder="0.0"
                                             className={`w-full min-w-24 ${
                                               fieldError?.todayfit && fieldTouched?.todayfit 

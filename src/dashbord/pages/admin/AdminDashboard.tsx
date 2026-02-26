@@ -160,7 +160,7 @@ export default function AdminDashboard() {
                 Total Revenue
               </CardTitle>
               <DollarSign className="h-5 w-5 text-yellow-500" />
-            </CardHeader>x
+            </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-gray-900 dark:text-white">
                 ₹{milkLoading ? '...' : totalRevenue.toFixed(2)}

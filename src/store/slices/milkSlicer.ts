@@ -282,26 +282,32 @@ const milkSlice = createSlice({
       })
       .addCase(saveMilk.fulfilled, (state, action) => {
         state.saveLoading = false
-        state.milkEntries.unshift(action.payload.daily)
-        
-        // Update user totals
-        const existingUserTotalIndex = state.userTotals.findIndex(
-          total => total.userid === action.payload.userTotal.userid
-        )
-        if (existingUserTotalIndex >= 0) {
-          state.userTotals[existingUserTotalIndex] = action.payload.userTotal
-        } else {
-          state.userTotals.push(action.payload.userTotal)
+
+        // Guard: payload structure may vary by API response
+        if (action.payload?.daily) {
+          state.milkEntries.unshift(action.payload.daily)
         }
-        
-        // Update admin totals
-        const existingAdminTotalIndex = state.adminTotals.findIndex(
-          total => total.monthid === action.payload.adminTotal.monthid
-        )
-        if (existingAdminTotalIndex >= 0) {
-          state.adminTotals[existingAdminTotalIndex] = action.payload.adminTotal
-        } else {
-          state.adminTotals.push(action.payload.adminTotal)
+
+        if (action.payload?.userTotal?.userid) {
+          const existingUserTotalIndex = state.userTotals.findIndex(
+            total => total.userid === action.payload.userTotal.userid
+          )
+          if (existingUserTotalIndex >= 0) {
+            state.userTotals[existingUserTotalIndex] = action.payload.userTotal
+          } else {
+            state.userTotals.push(action.payload.userTotal)
+          }
+        }
+
+        if (action.payload?.adminTotal?.monthid) {
+          const existingAdminTotalIndex = state.adminTotals.findIndex(
+            total => total.monthid === action.payload.adminTotal.monthid
+          )
+          if (existingAdminTotalIndex >= 0) {
+            state.adminTotals[existingAdminTotalIndex] = action.payload.adminTotal
+          } else {
+            state.adminTotals.push(action.payload.adminTotal)
+          }
         }
       })
       .addCase(saveMilk.rejected, (state, action) => {
