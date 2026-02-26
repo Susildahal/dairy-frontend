@@ -20,6 +20,7 @@ const UserHome = lazy(() => import("../pages/user/UserHome"));
 const UserDashboard = lazy(() => import("../pages/user/UserDashboard"));
 const AdminDashboard = lazy(() => import("../pages/admin/AdminDashboard"));
 const MilkManagement = lazy(() => import("../pages/admin/MilkManagement"));
+const UserLoginDashboard = lazy(() => import("../pages/user/userLoginDashboard"));
 // Typed lazy import so the Createuser component can accept the `isedit` prop
 const Createuser = lazy(() => import("../pages/admin/Createuser")) as unknown as React.ComponentType<{ isedit?: boolean }>;
 const Settings = lazy(() => import("../pages/admin/setting"));
@@ -38,13 +39,9 @@ export default function AppRouter() {
                     <Route path="/login" element={<Login />} />
                     
                     {/* User Routes - Accessible to both users and admins */}
-                    <Route path="/user" element={
-                        <ProtectedRoute>
-                            <UserLayout />
-                        </ProtectedRoute>
-                    }>
+                    <Route path="/user">
                         <Route index element={<UserHome />} />
-                        <Route path="dashboard" element={<UserDashboard />} />
+                        <Route path="dashboard" element={<UserLoginDashboard />} />
                         <Route path="products" element={<div>Products Page</div>} />
                         <Route path="about" element={<div>About Page</div>} />
                         <Route path="contact" element={<div>Contact Page</div>} />
@@ -72,15 +69,9 @@ export default function AppRouter() {
                         <Route path="user-dashboard" element={<UserDashboard />} />
                     </Route>
 
-                    {/* Standalone protected dashboard route for users */}
-                    <Route path="/dashboard" element={
-                        <ProtectedRoute>
-                            <UserDashboard />
-                        </ProtectedRoute>
-                    } />
-                    
                     {/* Legacy redirects */}
-                    <Route path="/dashbord" element={<Navigate to="/dashboard" replace />} />
+                    <Route path="/dashboard" element={<Navigate to="/user/dashboard" replace />} />
+                    <Route path="/dashbord" element={<Navigate to="/user/dashboard" replace />} />
                     
                     <Route path="*" element={<NotFound />} />
                 </Routes>

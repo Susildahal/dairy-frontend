@@ -33,10 +33,16 @@ export const UserPDFModal: React.FC<UserPDFModalProps> = ({
   const [statusMessage, setStatusMessage] = useState('')
   const [messageType, setMessageType] = useState<'success' | 'error' | 'info'>('info')
 
-  // Fetch all users when modal opens
+  // If a specific user is passed via props, auto-select them; otherwise fetch all users
   useEffect(() => {
     if (isOpen) {
-      fetchAllUsers()
+      if (usersProp && usersProp.length > 0) {
+        // Use the provided user directly — no need to fetch
+        setAllUsers(usersProp)
+        setSelectedUser(usersProp[0]._id)
+      } else {
+        fetchAllUsers()
+      }
     }
   }, [isOpen])
 
@@ -182,9 +188,11 @@ export const UserPDFModal: React.FC<UserPDFModalProps> = ({
             </Button>
           </div>
           <p className="text-gray-600 text-sm">Generate and download PDF reports one at a time</p>
-          <p className="text-blue-600 text-xs mt-1">
-            {loadingUsers ? 'Loading users...' : `Available: ${allUsers.length} users, ${months.length} months`}
-          </p>
+          {(!usersProp || usersProp.length === 0) && (
+            <p className="text-blue-600 text-xs mt-1">
+              {loadingUsers ? 'Loading users...' : `Available: ${allUsers.length} users, ${months.length} months`}
+            </p>
+          )}
         </CardHeader>
         
         <CardContent className="space-y-6 pt-6">
@@ -212,8 +220,8 @@ export const UserPDFModal: React.FC<UserPDFModalProps> = ({
             </Select>
           </div>
 
-          {/* User Selection - Only for single user reports */}
-          {reportType === 'single' && (
+          {/* User Selection - Only for single user reports AND when no specific user is pre-provided */}
+          {reportType === 'single' && (!usersProp || usersProp.length === 0) && (
             <div className="space-y-2">
               <Label className="text-base font-semibold">Select User *</Label>
               <Select value={selectedUser} onValueChange={setSelectedUser}>

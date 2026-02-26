@@ -3,8 +3,8 @@ import axios from 'axios';
 // src/utils/axiosInstance.ts
 
 const axiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'https://dairyadmin.vercel.app/api/',
-    // baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api/',
+  // baseURL: import.meta.env.VITE_API_BASE_URL || 'https://dairyadmin.vercel.app/api/',
+    baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api/',
   withCredentials: true, // send & receive cookies
   headers: {
     'Accept': 'application/json',

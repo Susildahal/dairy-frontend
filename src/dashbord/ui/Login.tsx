@@ -61,7 +61,7 @@ export default function LoginPage() {
           if (userData.role === 'admin') {
             navigator("/admin/dashboard")
           } else {
-            navigator("/dashboard")
+            navigator("/user/dashboard")
           }
         }, 100) // Reduced delay but still ensures state update
       } else { 

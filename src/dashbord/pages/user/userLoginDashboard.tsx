@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Label } from "../../../components/ui/label"
 import {  FileText, RotateCcw, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react"
 import { useLocation } from 'react-router-dom'
+
 interface FilterParams {
   userid?: string
   monthid?: string
@@ -23,12 +24,15 @@ interface FilterParams {
 }
 
 
-const UserDashboard: React.FC = () => {
+const UserLoginDashboard: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>()
   const { milkEntries, loading, error, pagination } = useSelector((state: RootState) => state.milk)
   const { data } = useSelector((state: RootState) => state.user)
   const { months } = useSelector((state: RootState) => state.months)
-  const { user } = useAuth() // Get authenticated user from useAuth hook
+  const user = useSelector((state: RootState) => state.mee)
+  const { user: authUser } = useAuth() // Get authenticated user from useAuth hook
+  console.log('User from mee slice:', user)
+  console.log('Auth user:', authUser)
   const location = useLocation()
   // get current path from react-router
   const currentPath = location.pathname // e.g. "/dashboard/user"
@@ -47,9 +51,10 @@ const UserDashboard: React.FC = () => {
   }, [currentPath])
   // Filter states
   const [filters, setFilters] = useState<FilterParams>(
-    user ? {
+    authUser ? {
      page: 1,
-      limit: 10
+      limit: 10,
+      userid: authUser._id
     } : {
       page: 1, 
       limit: 10
@@ -78,13 +83,14 @@ const UserDashboard: React.FC = () => {
   }
 
   useEffect(() => {
-    fetchMilkData()
+    fetchMilkData(
+    )
   }, [filters, selectedFilter])
 
   // Handle filter changes
   const handleFilterChange = (key: keyof FilterParams, value: any) => {
     // For UserDashboard, don't allow changing the userid - it should always be the logged-in user
-    if (key === 'userid' && user) {
+    if (key === 'userid' && authUser) {
       return
     }
     
@@ -161,14 +167,15 @@ const UserDashboard: React.FC = () => {
 
   return (
     <>
-
+  <Header/>
     <div className="container mx-auto p-4 space-y-4">
       
+
       <div className="flex justify-between items-center border-b pb-3">
         <div>
-          <h1 className="text-2xl font-bold">My Milkds Collection</h1>
-          {user && (
-            <p className="text-sm text-gray-600 mt-1">Name: {user.name}</p>
+          <h1 className="text-2xl font-bold">My Milk Collection</h1>
+          {authUser && (
+            <p className="text-sm text-gray-600 mt-1">Name: {authUser.name}</p>
           )}
         </div>
         <Button onClick={() => setShowUserReportModal(true)} variant="outline" className='cursor-pointer' size="sm">
@@ -393,11 +400,11 @@ const UserDashboard: React.FC = () => {
       </div>
 
       {/* User PDF Modal */}
-      {data && months && user && (
+      {data && months && authUser && (
         <UserPDFModal
           isOpen={showUserReportModal}
           onClose={() => setShowUserReportModal(false)}
-          users={[data.find((u: any) => u._id === user._id)].filter(Boolean)}
+          users={[data.find((u: any) => u._id === authUser._id)].filter(Boolean)}
           months={months || []}
         />
       )}
@@ -406,4 +413,4 @@ const UserDashboard: React.FC = () => {
   )
 }
 
-export default UserDashboard
+export default UserLoginDashboard

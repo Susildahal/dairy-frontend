@@ -155,8 +155,9 @@ export const generateUserMonthlyPDF = async (userData: any[], userName: string, 
     })
   }
 
-  const safeUser = userName.replace(/[^\w\s-]/g, '') || 'User'
-  doc.save(`${safeUser}_${monthDetails?.month || 'Month'}_${monthDetails?.year || 'Year'}.pdf`)
+  const safeUser = userName.replace(/[^\w\s-]/g, '').trim() || userName.substring(0, 20) || 'User'
+  const safeMonth = (monthDetails?.month || 'Month').replace(/[^\w\s-]/g, '').trim() || monthDetails?.month || 'Month'
+  doc.save(`${safeUser}_${safeMonth}_${monthDetails?.year || 'Year'}.pdf`)
 }
 
 // ─── All-Users Monthly PDF ────────────────────────────────────────────────────

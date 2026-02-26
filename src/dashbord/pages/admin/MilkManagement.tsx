@@ -572,7 +572,7 @@ const MilkManagement: React.FC = () => {
         <UserPDFModal
           isOpen={showUserReportModal}
           onClose={() => setShowUserReportModal(false)}
-          users={data.filter((user: any) => user.role === 'user') || []}
+          users={[]}
           months={months || []}
         />
       )}
