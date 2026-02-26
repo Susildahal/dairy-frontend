@@ -114,9 +114,9 @@ const Settings = () => {
       {/* Settings Form */}
       <div className="grid gap-6">
         {/* Site Information */}
-        <Card className="border-green-200 dark:border-green-800">
-          <CardHeader className="bg-green-50 dark:bg-green-900/20">
-            <CardTitle className="flex items-center gap-2 text-green-700 dark:text-green-300">
+        <Card className=" ">
+          <CardHeader className=" dark:bg-green-900/20">
+            <CardTitle className="flex items-center ">
               <User className="h-5 w-5" />
               Site Information
             </CardTitle>
@@ -181,9 +181,9 @@ const Settings = () => {
         </Card>
 
         {/* Rate Configuration */}
-        <Card className="border-green-200 dark:border-green-800">
-          <CardHeader className="bg-green-50 dark:bg-green-900/20">
-            <CardTitle className="flex items-center gap-2 text-green-700 dark:text-green-300">
+        <Card className="">
+          <CardHeader className=" dark:bg-green-900/20">
+            <CardTitle className="flex items-center gap-2 ">
               <DollarSign className="h-5 w-5" />
               Rate Configuration
             </CardTitle>
@@ -241,8 +241,8 @@ const Settings = () => {
         </Card>
 
         {/* Action Buttons */}
-        <Card>
-          <CardContent className="pt-6">
+        <Card className='border-none'>
+          <CardContent className="pt-6 border-none ">
             <div className="flex flex-col sm:flex-row gap-3 sm:justify-end">
               <Button
                 variant="outline"
@@ -273,26 +273,7 @@ const Settings = () => {
         </Card>
       </div>
 
-      {/* Info Section */}
-      <Card className="bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-800">
-        <CardContent className="pt-6">
-          <div className="flex items-start gap-3">
-            <div className="h-5 w-5 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0 mt-0.5">
-              <span className="text-white text-xs font-bold">!</span>
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-green-800 dark:text-green-200">
-                Important Notes
-              </p>
-              <ul className="text-sm text-green-700 dark:text-green-300 space-y-1">
-                <li>• Changes to rates will affect all future transactions</li>
-                <li>• Contact information will be used for system notifications</li>
-                <li>• Make sure to save your changes before leaving this page</li>
-              </ul>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+
     </div>
   )
 }

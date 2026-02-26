@@ -91,7 +91,7 @@ export default function AdminDashboard() {
 
         {/* Active Month Banner */}
         {activeMonth && (
-          <Card className="mb-6 bg-gradient-to-r from-blue-500 to-blue-600 border-none shadow-lg">
+          <Card className="mb-6 bg-gradient-to-r from-blue-500 to-blue-600 border-none ">
             <CardContent className="py-4">
               <div className="flex items-center justify-between text-white">
                 <div className="flex items-center gap-3">
@@ -112,7 +112,7 @@ export default function AdminDashboard() {
         {/* Statistics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
           {/* Total Users Card */}
-          <Card className="hover:shadow-lg transition-shadow duration-300 border-t-4 border-t-blue-500">
+          <Card className=" duration-300 border-t-4 border-t-blue-500">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
                 Total Users
@@ -133,7 +133,7 @@ export default function AdminDashboard() {
           </Card>
 
           {/* Total Milk Card */}
-          <Card className="hover:shadow-lg transition-shadow duration-300 border-t-4 border-t-green-500">
+          <Card className=" duration-300 border-t-4 border-t-green-500">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
                 Total Milk (This Month)
@@ -154,7 +154,7 @@ export default function AdminDashboard() {
           </Card>
 
           {/* Total Revenue Card */}
-          <Card className="hover:shadow-lg transition-shadow duration-300 border-t-4 border-t-yellow-500">
+          <Card className="  duration-300 border-t-4 border-t-yellow-500">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
                 Total Revenue
@@ -178,7 +178,7 @@ export default function AdminDashboard() {
           </Card>
 
           {/* Admin Count Card */}
-          <Card className="hover:shadow-lg transition-shadow duration-300 border-t-4 border-t-purple-500">
+          <Card className=" duration-300 border-t-4 border-t-purple-500">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
                 Administrators
@@ -202,7 +202,7 @@ export default function AdminDashboard() {
         {/* Quick Actions & System Info */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Quick Actions Card */}
-          <Card className="shadow-lg">
+          <Card className="">
             <CardHeader>
               <CardTitle className="text-xl">Quick Actions</CardTitle>
               <CardDescription>Frequently used operations</CardDescription>
@@ -275,7 +275,7 @@ export default function AdminDashboard() {
           </Card>
 
           {/* System Information Card */}
-          <Card className="shadow-lg">
+          <Card className="">
             <CardHeader>
               <CardTitle className="text-xl">System Information</CardTitle>
               <CardDescription>Current system configuration</CardDescription>
@@ -320,7 +320,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Recent Activity Section */}
-        <Card className="mt-6 shadow-lg">
+        <Card className="mt-6 ">
           <CardHeader>
             <CardTitle className="text-xl">Recent Activity Overview</CardTitle>
             <CardDescription>Latest updates and statistics</CardDescription>

@@ -218,7 +218,7 @@ const Createuser = () => {
           linkto="/admin/users"
         />
         <div className="mx-auto">
-          <Card className="shadow-lg border-gray-200 dark:border-gray-700">
+          <Card className=" border-gray-200 dark:border-gray-700">
             <CardContent className="p-6 sm:p-8">
               <div className="flex items-center justify-center h-64">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
@@ -240,7 +240,7 @@ const Createuser = () => {
         linkto="/admin/users"
       />
       <div className="mx-auto">
-        <Card className="shadow-lg border-gray-200 dark:border-gray-700">
+        <Card className=" border-gray-200 dark:border-gray-700">
           <CardContent className="p-6 sm:p-8">
             <Formik
               initialValues={initialValues}
