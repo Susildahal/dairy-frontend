@@ -11,6 +11,8 @@ import { updatedata, getsettingdata, savedata } from "../../../store/slices/site
 import { RootState, AppDispatch } from '../../../store/store'
 import Loading from '../../ui/Loading'
 import { useEffect } from 'react'
+import { NepaliDatePicker } from "nepali-datepicker-reactjs";
+import "nepali-datepicker-reactjs/dist/index.css";
 
 
 interface SiteSettings {
@@ -31,6 +33,7 @@ const Settings = () => {
   })
 
   const [isLoading, setIsLoading] = useState(false)
+  const [date, setDate] = useState<string>("");
 
   const dispatch = useDispatch<AppDispatch>();
   const { data, loading, error, dataExists } = useSelector((state: RootState) => state.siteSettings);
@@ -272,6 +275,19 @@ const Settings = () => {
           </CardContent>
         </Card>
       </div>
+<div>
+            <h3>Nepali Date</h3>
+
+      <NepaliDatePicker
+        inputClassName="form-control"
+        className=""
+        value={date}
+        onChange={(value) => setDate(value)}
+        options={{ calenderLocale: "ne", valueLocale: "en" }}
+      />
+
+      <p>Selected BS Date: {date}</p>
+    </div>
 
 
     </div>
