@@ -286,6 +286,13 @@ const Settings = () => {
       onChange={(value) => setDate(value)}
       options={{ calenderLocale: "ne", valueLocale: "en" }}
     />
+    {!date && (
+      <span
+        className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none select-none"
+      >
+        Select Nepali date
+      </span>
+    )}
   </div>
 
   <div className="mt-4 p-3 bg-gray-50 rounded-md border-l-4 border-blue-500">
