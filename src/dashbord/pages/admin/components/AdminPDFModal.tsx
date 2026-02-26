@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { useDispatch } from 'react-redux'
+import React, { useState, useEffect } from 'react'
+import { useDispatch, useSelector } from 'react-redux'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -7,26 +7,61 @@ import { Label } from '@/components/ui/label'
 import { FileText, AlertCircle } from 'lucide-react'
 import { generateUserMonthlyPDF } from '../utils/pdfUtils'
 import { getAllMilk } from '../../../../store/slices/milkSlicer'
-import { AppDispatch } from '../../../../store/store'
+import { getdata } from '../../../../store/slices/userSlicer'
+import { AppDispatch, RootState } from '../../../../store/store'
 
-interface UserPDFModalProps {
+interface AdminPDFModalProps {
   isOpen: boolean
   onClose: () => void
-  user: any       // single logged-in user object
   months: any[]
 }
 
-export const UserPDFModal: React.FC<UserPDFModalProps> = ({
+export const AdminPDFModal: React.FC<AdminPDFModalProps> = ({
   isOpen,
   onClose,
-  user,
   months,
 }) => {
   const dispatch = useDispatch<AppDispatch>()
+  // Pull users already in Redux store first
+  const storeUsers = useSelector((state: RootState) => state.user.data)
+  const [allUsers, setAllUsers] = useState<any[]>(() =>
+    storeUsers.filter((u: any) => u.role === 'user')
+  )
+  const [loadingUsers, setLoadingUsers] = useState(false)
+  const [selectedUser, setSelectedUser] = useState('')
   const [selectedMonth, setSelectedMonth] = useState('')
   const [loadingData, setLoadingData] = useState(false)
   const [statusMessage, setStatusMessage] = useState('')
   const [messageType, setMessageType] = useState<'success' | 'error' | 'info'>('info')
+
+  // Sync from Redux store whenever it updates
+  useEffect(() => {
+    const filtered = storeUsers.filter((u: any) => u.role === 'user')
+    if (filtered.length > 0) setAllUsers(filtered)
+  }, [storeUsers])
+
+  // Fetch all users when modal opens (only if not already loaded)
+  useEffect(() => {
+    if (isOpen && allUsers.length === 0) {
+      fetchAllUsers()
+    }
+  }, [isOpen])
+
+  const fetchAllUsers = async () => {
+    try {
+      setLoadingUsers(true)
+      const response = await dispatch(getdata())
+      if (response.payload) {
+        const users = (response.payload as any[]).filter((u: any) => u.role === 'user')
+        setAllUsers(users)
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error)
+      showMessage('Failed to load users', 'error')
+    } finally {
+      setLoadingUsers(false)
+    }
+  }
 
   const showMessage = (message: string, type: 'success' | 'error' | 'info') => {
     setStatusMessage(message)
@@ -34,9 +69,10 @@ export const UserPDFModal: React.FC<UserPDFModalProps> = ({
     setTimeout(() => setStatusMessage(''), 5000)
   }
 
-  const handleGeneratePDF = async () => {
-    if (!selectedMonth) {
-      showMessage('Please select a month', 'error')
+  // Generate PDF for a single user
+  const handleGenerateUserPDF = async () => {
+    if (!selectedUser || !selectedMonth) {
+      showMessage('Please select both user and month', 'error')
       return
     }
     try {
@@ -44,7 +80,7 @@ export const UserPDFModal: React.FC<UserPDFModalProps> = ({
       showMessage('Fetching data and generating PDF...', 'info')
 
       const response = await dispatch(getAllMilk({
-        userid: user._id,
+        userid: selectedUser,
         monthid: selectedMonth,
         limit: 999999,
       }))
@@ -52,10 +88,11 @@ export const UserPDFModal: React.FC<UserPDFModalProps> = ({
       if (response.payload && (response.payload as any).data) {
         const userData = (response.payload as any).data
         if (userData.length === 0) {
-          showMessage('No data found for selected month', 'error')
+          showMessage('No data found for selected user and month', 'error')
           return
         }
-        const month = months.find((m: any) => m._id === selectedMonth)
+        const user = allUsers.find(u => u._id === selectedUser)
+        const month = months.find(m => m._id === selectedMonth)
         await generateUserMonthlyPDF(userData, user?.name || 'Unknown User', month)
         showMessage('PDF downloaded successfully!', 'success')
       } else {
@@ -70,6 +107,7 @@ export const UserPDFModal: React.FC<UserPDFModalProps> = ({
   }
 
   const handleClose = () => {
+    setSelectedUser('')
     setSelectedMonth('')
     setStatusMessage('')
     onClose()
@@ -79,18 +117,19 @@ export const UserPDFModal: React.FC<UserPDFModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <Card className="w-full max-w-md my-auto">
+      <Card className="w-full max-w-md my-auto max-h-[95vh] overflow-y-auto">
         <CardHeader>
           <div className="flex justify-between items-center">
             <CardTitle className="text-xl font-bold text-blue-700">
-              Download My Report
+              PDF Report Generator
             </CardTitle>
             <Button onClick={handleClose} variant="outline" size="sm" className="rounded-full h-8 w-8 p-0">
               ✕
             </Button>
           </div>
-          <p className="text-gray-600 text-sm">
-            Generating report for <span className="font-semibold text-gray-800">{user?.name}</span>
+          <p className="text-gray-600 text-sm">Generate and download PDF reports</p>
+          <p className="text-blue-600 text-xs mt-1">
+            {loadingUsers ? 'Loading users...' : `${allUsers.length} users · ${months.length} months`}
           </p>
         </CardHeader>
 
@@ -116,6 +155,32 @@ export const UserPDFModal: React.FC<UserPDFModalProps> = ({
             </Select>
           </div>
 
+          {/* User Selection */}
+          <div className="space-y-2">
+              <Label className="text-base font-semibold">Select User *</Label>
+              <Select value={selectedUser} onValueChange={setSelectedUser}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Choose a user" />
+                </SelectTrigger>
+                <SelectContent className="max-h-[40vh] sm:max-h-[300px]">
+                  {loadingUsers ? (
+                    <div className="p-2 text-sm text-gray-500">Loading users...</div>
+                  ) : allUsers.length > 0 ? (
+                    allUsers.map((user: any) => (
+                      <SelectItem key={user._id} value={user._id}>
+                        {user.name} {user.tagnumber ? `(${user.tagnumber})` : ''}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <div className="p-2 text-sm text-gray-500">No users available</div>
+                  )}
+                </SelectContent>
+              </Select>
+              {!loadingUsers && allUsers.length === 0 && (
+                <p className="text-red-500 text-xs">No users found.</p>
+              )}
+            </div>
+
           {/* Status Message */}
           {statusMessage && (
             <div className={`p-3 rounded-md text-sm ${
@@ -130,10 +195,10 @@ export const UserPDFModal: React.FC<UserPDFModalProps> = ({
             </div>
           )}
 
-          {/* Download Button */}
+          {/* Generate Button */}
           <Button
-            onClick={handleGeneratePDF}
-            disabled={loadingData || !selectedMonth}
+            onClick={handleGenerateUserPDF}
+            disabled={loadingData || !selectedUser || !selectedMonth}
             className="w-full bg-blue-600 hover:bg-blue-700"
           >
             {loadingData ? (

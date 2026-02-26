@@ -258,6 +258,19 @@ const milkSlice = createSlice({
   reducers: {
     clearError: (state) => {
       state.error = null
+    },
+    clearMilkEntries: (state) => {
+      state.milkEntries = []
+      state.pagination = {
+        currentPage: 1,
+        totalPages: 0,
+        totalItems: 0,
+        itemsPerPage: 10,
+        hasNextPage: false,
+        hasPrevPage: false,
+        nextPage: null,
+        prevPage: null,
+      }
     }
   },
   extraReducers: (builder) => {
@@ -358,5 +371,5 @@ const milkSlice = createSlice({
   }
 })
 
-export const { clearError } = milkSlice.actions
+export const { clearError, clearMilkEntries } = milkSlice.actions
 export default milkSlice.reducer

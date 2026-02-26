@@ -4,7 +4,7 @@ import { RootState, AppDispatch } from '../../../store/store'
 import { getAllMilk, updateMilk, deleteMilk } from '../../../store/slices/milkSlicer'
 import { getAllMonths } from "../../../store/slices/monthslicer"
 import { getdata } from "../../../store/slices/userSlicer"
-import { UserPDFModal } from './components/UserPDFModal'
+import { AdminPDFModal } from './components/AdminPDFModal'
 import axios from 'axios'
 import ConfirmDeleteDialog from "@/components/ui/ConfirmDeleteDialog";
 
@@ -569,10 +569,9 @@ const MilkManagement: React.FC = () => {
 
       {/* User PDF Modal */}
       {data && months && (
-        <UserPDFModal
+        <AdminPDFModal
           isOpen={showUserReportModal}
           onClose={() => setShowUserReportModal(false)}
-          users={[]}
           months={months || []}
         />
       )}

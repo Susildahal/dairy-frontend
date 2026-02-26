@@ -85,10 +85,10 @@ export default function LoginPage() {
         <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-purple-200/30 to-pink-200/30 rounded-full blur-3xl"></div>
       </div>
       
-      <Card className="w-full max-w-md relative backdrop-blur-sm bg-white/80 shadow-2xl border-0 ring-1 ring-gray-200/50">
+      <Card className="w-full max-w-md relative backdrop-blur-sm bg-white/80  border-0 ring-1 ring-gray-200/50">
         <CardHeader className="space-y-1 text-center pb-4">
           <div className="flex justify-center mb-4">
-            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
+            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center ">
               <Milk className="w-8 h-8 text-white" />
             </div>
           </div>
@@ -119,7 +119,7 @@ export default function LoginPage() {
                   placeholder="Enter your email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="pl-11 h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 rounded-xl transition-all duration-200"
+                  className="pl-11 h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 rounded transition-all duration-200"
                   required
                 />
               </div>
@@ -137,7 +137,7 @@ export default function LoginPage() {
                   placeholder="Enter your password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="pl-11 pr-12 h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 rounded-xl transition-all duration-200"
+                  className="pl-11 pr-12 h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-500/20  transition-all duration-200"
                   required
                 />
                 <Button
@@ -172,7 +172,7 @@ export default function LoginPage() {
             <Button 
               type="submit" 
               disabled={isLoading}
-              className="w-full h-12 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:-translate-y-0.5"
+              className="w-full h-12 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium rounded-xl  transition-all duration-200 transform hover:-translate-y-0.5"
             >
               {isLoading ? (
                 <>

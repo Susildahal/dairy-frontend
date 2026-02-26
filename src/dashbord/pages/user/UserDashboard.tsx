@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useMemo } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { RootState, AppDispatch } from '../../../store/store'
-import { getAllMilk } from '../../../store/slices/milkSlicer'
+import { getAllMilk, clearMilkEntries } from '../../../store/slices/milkSlicer'
 import { getAllMonths } from "../../../store/slices/monthslicer"
 import { getdata } from "../../../store/slices/userSlicer"
-import { UserPDFModal } from '../admin/components/UserPDFModal'
+import { AdminPDFModal } from '../admin/components/AdminPDFModal'
 import { useAuth } from '../../../hooks/useAuth'
 import {Header} from '../../common/Header'
 import { Button } from "../../../components/ui/button"
@@ -57,6 +57,7 @@ const UserDashboard: React.FC = () => {
   )
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'morning' | 'night'>('all')
   const [showUserReportModal, setShowUserReportModal] = useState(false)
+  const [hasAppliedFilter, setHasAppliedFilter] = useState(false)
 
   useEffect(() => {
     if(!months || months.length === 0)
@@ -68,8 +69,9 @@ const UserDashboard: React.FC = () => {
       dispatch(getdata())
   }, [dispatch, data])
 
-  // Fetch milk data with filters
+  // Fetch milk data with filters — only when a filter has been explicitly applied
   const fetchMilkData = () => {
+    if (!hasAppliedFilter) return
     const params: any = { ...filters }
     if (selectedFilter !== 'all') {
       params.session = selectedFilter
@@ -78,20 +80,16 @@ const UserDashboard: React.FC = () => {
   }
 
   useEffect(() => {
-    fetchMilkData()
-  }, [filters, selectedFilter])
+    if (hasAppliedFilter) fetchMilkData()
+  }, [filters, selectedFilter, hasAppliedFilter])
 
-  // Handle filter changes
+  // Handle filter changes — mark filter as applied on first meaningful selection
   const handleFilterChange = (key: keyof FilterParams, value: any) => {
-    // For UserDashboard, don't allow changing the userid - it should always be the logged-in user
-    if (key === 'userid' && user) {
-      return
-    }
-    
+    setHasAppliedFilter(true)
     setFilters(prev => ({
       ...prev,
       [key]: value,
-      page: 1 // Reset to first page when filters change
+      page: 1
     }))
   }
 
@@ -100,13 +98,18 @@ const UserDashboard: React.FC = () => {
     setFilters(prev => ({ ...prev, page }))
   }
 
-  // Reset all filters except userid
+  // Also mark applied when session filter changes
+  const handleSessionChange = (value: 'all' | 'morning' | 'night') => {
+    setHasAppliedFilter(true)
+    setSelectedFilter(value)
+  }
+
+  // Reset all filters and clear table
   const handleResetFilters = () => {
-    setFilters({
-      page: 1,
-      limit: 10
-    })
+    setFilters({ page: 1, limit: 10 })
     setSelectedFilter('all')
+    setHasAppliedFilter(false)
+    dispatch(clearMilkEntries())
   }
 
   // Export to CSV
@@ -166,10 +169,7 @@ const UserDashboard: React.FC = () => {
       
       <div className="flex justify-between items-center border-b pb-3">
         <div>
-          <h1 className="text-2xl font-bold">My Milkds Collection</h1>
-          {user && (
-            <p className="text-sm text-gray-600 mt-1">Name: {user.name}</p>
-          )}
+          <h1 className="text-2xl font-bold">My Milk Collection</h1>
         </div>
         <Button onClick={() => setShowUserReportModal(true)} variant="outline" className='cursor-pointer' size="sm">
           <FileText className="w-4 h-4 mr-2" />
@@ -186,7 +186,25 @@ const UserDashboard: React.FC = () => {
             Reset
           </Button>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+          {/* User Filter */}
+          <div className="space-y-1">
+            <Label className="text-sm">User</Label>
+            <Select value={filters.userid || 'all'} onValueChange={(value) => handleFilterChange('userid', value === 'all' ? undefined : value)}>
+              <SelectTrigger className="h-9 w-full">
+                <SelectValue placeholder="All Users" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Users</SelectItem>
+                {data?.filter((u: any) => u.role === 'user').map((u: any) => (
+                  <SelectItem key={u._id} value={u._id}>
+                    {u.name} {u.tagnumber ? `(${u.tagnumber})` : ''}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           {/* Month Filter */}
           <div className="space-y-1">
             <Label className="text-sm">Month</Label>
@@ -208,7 +226,7 @@ const UserDashboard: React.FC = () => {
           {/* Session Filter */}
           <div className="space-y-1">
             <Label className="text-sm">Session</Label>
-            <Select value={selectedFilter} onValueChange={(value: 'all' | 'morning' | 'night') => setSelectedFilter(value)}>
+              <Select value={selectedFilter} onValueChange={handleSessionChange}>
               <SelectTrigger className="h-9 w-full">
                 <SelectValue />
               </SelectTrigger>
@@ -239,6 +257,17 @@ const UserDashboard: React.FC = () => {
         </div>
       </div>
 
+      {/* Summary & Table — only when a filter has been applied */}
+      {!hasAppliedFilter ? (
+        <div className="bg-white rounded border flex flex-col items-center justify-center py-16 text-center text-gray-400 space-y-3">
+          <svg className="w-12 h-12 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" />
+          </svg>
+          <p className="text-base font-medium text-gray-500">Select a filter to view records</p>
+          <p className="text-sm text-gray-400">Choose a user, month, or session above to load data</p>
+        </div>
+      ) : (
+        <>
       {/* Summary */}
       <div className="grid grid-cols-3 gap-3">
         <div className="bg-white p-3 rounded border text-center">
@@ -276,6 +305,7 @@ const UserDashboard: React.FC = () => {
             <TableHeader>
               <TableRow>
                 <TableHead>Date</TableHead>
+                <TableHead>User</TableHead>
                 <TableHead>Session</TableHead>
                 <TableHead>Milk (L)</TableHead>
                 <TableHead>Fat %</TableHead>
@@ -291,6 +321,9 @@ const UserDashboard: React.FC = () => {
                   <TableRow key={entry._id}>
                     <TableCell className="font-medium">
                       {formatDate(entry.createdAt)}
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {data?.find((u: any) => u._id === entry.userid)?.name || entry.user?.name || '-'}
                     </TableCell>
                     <TableCell>
                       <Badge variant={entry.session === 'morning' ? 'default' : 'secondary'} className="text-xs">
@@ -391,13 +424,14 @@ const UserDashboard: React.FC = () => {
           </div>
         )}
       </div>
+      </> 
+      )}
 
-      {/* User PDF Modal */}
-      {data && months && user && (
-        <UserPDFModal
+      {/* Admin PDF Modal */}
+      {months && (
+        <AdminPDFModal
           isOpen={showUserReportModal}
           onClose={() => setShowUserReportModal(false)}
-          users={[data.find((u: any) => u._id === user._id)].filter(Boolean)}
           months={months || []}
         />
       )}

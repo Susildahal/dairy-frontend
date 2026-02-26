@@ -404,7 +404,7 @@ const UserLoginDashboard: React.FC = () => {
         <UserPDFModal
           isOpen={showUserReportModal}
           onClose={() => setShowUserReportModal(false)}
-          users={[data.find((u: any) => u._id === authUser._id)].filter(Boolean)}
+          user={data.find((u: any) => u._id === authUser._id)}
           months={months || []}
         />
       )}

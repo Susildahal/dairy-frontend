@@ -3,12 +3,13 @@ import { useSelector, useDispatch } from 'react-redux'
 import { AppDispatch, RootState } from '@/store/store'
 import { getdata } from '@/store/slices/userSlicer'
 import { getAllMilk } from '@/store/slices/milkSlicer'
-import { getActiveMonth } from '@/store/slices/monthslicer'
+import { getActiveMonth, getAllMonths } from '@/store/slices/monthslicer'
 import { getsettingdata } from '@/store/slices/sitesettingSlicer'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Users, Milk, DollarSign, TrendingUp, Calendar, Settings } from 'lucide-react'
+import { Users, Milk, DollarSign, TrendingUp, Calendar, Settings, FileText } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { AdminPDFModal } from './components/AdminPDFModal'
 
 export default function AdminDashboard() {
   const dispatch = useDispatch<AppDispatch>()
@@ -17,12 +18,15 @@ export default function AdminDashboard() {
   const { data: users, loading: usersLoading } = useSelector((state: RootState) => state.user)
   const { adminTotals, loading: milkLoading } = useSelector((state: RootState) => state.milk)
   const { activeMonth } = useSelector((state: RootState) => state.months)
+  const { months } = useSelector((state: RootState) => state.months)
   const { data: siteSettings } = useSelector((state: RootState) => state.siteSettings)
+  const [showPDFModal, setShowPDFModal] = useState(false)
 
   useEffect(() => {
     dispatch(getdata())
-    dispatch(getAllMilk())
+    dispatch(getAllMilk({}))
     dispatch(getActiveMonth())
+    dispatch(getAllMonths())
     dispatch(getsettingdata())
 
     // Update time every second
@@ -138,7 +142,7 @@ export default function AdminDashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold text-gray-900 dark:text-white">
-                {milkLoading === 'loading' ? '...' : totalMilk.toFixed(2)}
+                {milkLoading ? '...' : totalMilk.toFixed(2)}
               </div>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 Liters collected
@@ -156,10 +160,10 @@ export default function AdminDashboard() {
                 Total Revenue
               </CardTitle>
               <DollarSign className="h-5 w-5 text-yellow-500" />
-            </CardHeader>
+            </CardHeader>x
             <CardContent>
               <div className="text-3xl font-bold text-gray-900 dark:text-white">
-                ₹{milkLoading === 'loading' ? '...' : totalRevenue.toFixed(2)}
+                ₹{milkLoading ? '...' : totalRevenue.toFixed(2)}
               </div>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 Current month earnings
@@ -251,6 +255,22 @@ export default function AdminDashboard() {
                 </div>
                 <span className="text-purple-600 dark:text-purple-400 group-hover:translate-x-1 transition-transform">→</span>
               </Link>
+
+              <button
+                onClick={() => setShowPDFModal(true)}
+                className="w-full flex items-center justify-between p-4 rounded-lg bg-orange-50 dark:bg-orange-950/30 hover:bg-orange-100 dark:hover:bg-orange-950/50 transition-colors group"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-orange-500 rounded-lg">
+                    <FileText className="w-5 h-5 text-white" />
+                  </div>
+                  <div className="text-left">
+                    <p className="font-semibold text-gray-900 dark:text-white">Generate PDF Report</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Download monthly milk reports</p>
+                  </div>
+                </div>
+                <span className="text-orange-600 dark:text-orange-400 group-hover:translate-x-1 transition-transform">→</span>
+              </button>
             </CardContent>
           </Card>
 
@@ -331,6 +351,13 @@ export default function AdminDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Admin PDF Modal */}
+      <AdminPDFModal
+        isOpen={showPDFModal}
+        onClose={() => setShowPDFModal(false)}
+        months={months || []}
+      />
     </div>
   )
 }
